@@ -23,7 +23,7 @@ inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker) {
     if (transport.read(raw_buffer, size) != size) return false;
 
     //msgpack::unpack(result, reinterpret_cast<const char*>(buffer.data()), size);
-    unpacker.feed(data, size);
+    unpacker.feed(raw_buffer, size);
     return true;
 }
 

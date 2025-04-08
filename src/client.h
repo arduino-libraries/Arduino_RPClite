@@ -13,7 +13,7 @@ class RPCClient {
 public:
     RPCClient(ITransport& t) : transport(t) {}
 
-    float call(const std::string& method, float a, float b) {
+    float call(char* method, float a, float b) {
 
         //msgpack::sbuffer buffer;
         //msgpack::packer<msgpack::sbuffer> pk(&buffer);
@@ -30,7 +30,7 @@ public:
 
         packer.serialize(request);
 
-        send_msg(transport, packer.buffer);
+        send_msg(transport, packer.packet());
 
         MsgPack::Unpacker unpacker;
         if (recv_msg(transport, unpacker)) {
@@ -45,7 +45,7 @@ public:
         //    return res["result"].as<int>();
         //}
 
-        return -1; // Error TODO this is clearly wrong. Client should be waiting for reponse + timeout etc.
+        return -1; // Error TODO this is clearly wrong. Client should be waiting for response + timeout etc.
     }
 };
 

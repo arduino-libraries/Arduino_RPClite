@@ -51,7 +51,7 @@ public:
         resp["result"] = result;
         packer.serialize(resp);
 
-        send_msg(transport, packer.buffer);
+        send_msg(transport, packer.packet());
     }
 };
 
