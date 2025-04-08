@@ -10,4 +10,6 @@
 #include "src/client.h"
 #include "src/server.h"
 
+#include "src/DummyTransport.h"
+
 #endif //RPCLITE_H
