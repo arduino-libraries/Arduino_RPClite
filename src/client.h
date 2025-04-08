@@ -4,7 +4,7 @@
 
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
-#include "rpc.hpp"
+#include "rpc.h"
 
 class RPCClient {
     ITransport& transport;
