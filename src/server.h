@@ -6,52 +6,36 @@
 #define RPCLITE_SERVER_H
 
 #include "rpc.h"
-//#include <unordered_map>
-//#include <functional>
-//#include <string>
 
 class RPCServer {
     ITransport& transport;
-    //std::unordered_map<std::string, std::function<int(int, int)>> handlers;
 
 public:
     RPCServer(ITransport& t) : transport(t) {}
 
-    //void bind(const std::string& name, std::function<int(int, int)> fn) {
-        //handlers[name] = fn;
-    //}
+    int response_type = 1;
 
     void loop() {
-        // MsgPack::Unpacker unpacker;
-        // if (!recv_msg(transport, unpacker)) return;
+        MsgPack::Unpacker unpacker;
+        if (!recv_msg(transport, unpacker)) return;
 
-        // MsgPack::map_t<String, float> rm;
-        // unpacker.deserialize(rm);
+        int msg_type;
+        int msg_id;
+        MsgPack::str_t method;
+        float a;
+        float b;
 
-        // //auto obj = msg.get();
-        // //auto map = obj.as<std::map<std::string, msgpack::object>>();
+        unpacker.deserialize(msg_type, msg_id, method, a, b);
 
-        // //std::string method = map["method"].as<std::string>();
-        // //auto args = map["args"].as<std::vector<int>>();
-        // //int id = map["id"].as<int>();
+        float result = a * b;
 
-        // //int result = handlers[method](args[0], args[1]);
+        MsgPack::Packer packer;
 
-        // float result = rm["first"] + rm["second"];
+        MsgPack::object::nil_t null;
 
-        // //msgpack::sbuffer buffer;
-        // //msgpack::packer<msgpack::sbuffer> pk(&buffer);
-        // //pk.pack_map(2);
-        // //pk.pack("result"); pk.pack(result);
-        // //pk.pack("id");     pk.pack(id);
+        packer.serialize(response_type, msg_id, null, result);
+        send_msg(transport, packer.packet());
 
-        // MsgPack::Packer packer;
-        // MsgPack::map_t<String, float> resp;
-
-        // resp["result"] = result;
-        // packer.serialize(resp);
-
-        // send_msg(transport, packer.packet());
     }
 };
 

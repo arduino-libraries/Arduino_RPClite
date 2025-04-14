@@ -16,23 +16,41 @@ inline void send_msg(ITransport& transport, const MsgPack::bin_t<uint8_t>& buffe
         Serial.print(buffer.data()[i]);
         Serial.print(" ");
     }
+    Serial.println("");
 
     transport.write(reinterpret_cast<const uint8_t*>(buffer.data()), size);
 }
 
-inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker, float& result) {
+inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker) {
 
     size_t size = 256;
-    uint8_t* raw_buffer = new uint8_t[size];
-    if (transport.read(raw_buffer, size) != size) return false;
+    uint8_t raw_buffer[size] = {0};
 
-    //msgpack::unpack(result, reinterpret_cast<const char*>(buffer.data()), size);
-    unpacker.feed(raw_buffer, size);
-    uint8_t msg_type;
-    uint32_t msg_id;
-    uint8_t error;
+    int attempts = 0;
 
-    return unpacker.deserialize(msg_type, msg_id, error, result);
+    size_t bytes_read = 0;
+
+    while ((attempts<100) && (bytes_read == 0)) {
+        bytes_read = transport.read(raw_buffer, size);
+        attempts++;
+        delay(10);
+    }
+
+    if (bytes_read == 0){
+        Serial.println("no bytes received");
+        return false;
+    }
+
+    unpacker.feed(raw_buffer, bytes_read);
+
+    Serial.println("got data");
+    for (size_t i=0; i<bytes_read; i++){
+        Serial.print(raw_buffer[i]);
+        Serial.print(" ");
+    }
+    Serial.println("");
+
+    return true;
 }
 
 #endif //RPCLITE_RPC_H

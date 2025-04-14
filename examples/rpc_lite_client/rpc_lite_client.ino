@@ -9,7 +9,7 @@ RPCClient client(transport);
 void setup() {
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
-    
+    Serial.begin(9600);
 }
 
 void blink_before(){
@@ -28,7 +28,14 @@ void blink_before(){
 }
 
 void loop() {
+    float result;
     blink_before();
-    float result = client.call("mult", 2.0, 3.0);
-    delay(1000);
+    bool ok = client.call("mult", 2.0, 3.0, result);
+
+    if (ok) {
+        Serial.print("Result: ");
+        Serial.println(result);
+    }
+
+    delay(2000);
 }

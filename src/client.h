@@ -8,31 +8,49 @@
 
 class RPCClient {
     ITransport& transport;
-    uint32_t msg_id = 1;
+    int msg_id = 1;
 
 public:
     RPCClient(ITransport& t) : transport(t) {}
 
-    float call(MsgPack::str_t method, float a, float b) {
+    bool call(MsgPack::str_t method, float a, float b, float& result) {
 
         MsgPack::Packer packer;
 
-        uint8_t msg_type = 0;
+        int msg_type = 0;
 
         packer.serialize(msg_type, msg_id, method, a, b);
 
         send_msg(transport, packer.packet());
 
         MsgPack::Unpacker unpacker;
-        float result;
 
-        if (recv_msg(transport, unpacker, result)) {
+        delay(100);
+
+        if (recv_msg(transport, unpacker)) {
             
-            return result;
+            int r_msg_type;
+            int r_msg_id;
+            MsgPack::object::nil_t error;
+        
+            bool ok = unpacker.deserialize(r_msg_type, r_msg_id, error, result);
+            
+            if (!ok){
+                //Serial.println("could not serialize resp");
+                return false;
+            }
+
+            if (r_msg_id != msg_id){
+                //Serial.println("msg_id mismatch");
+                return false;
+            }
+
+            msg_id += 1;
+            return true;
 
         }
 
-        return -1; // Error TODO this is clearly wrong. Client should be waiting for response + timeout etc.
+        return false;
     }
 };
 

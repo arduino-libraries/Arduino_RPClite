@@ -29,16 +29,14 @@ class SerialTransport: public ITransport {
 
         size_t read(uint8_t* buffer, size_t size) override {
             
-            size_t r_size = uart->available();
+            size_t r_size = 0;
 
-            if (r_size == 0){return r_size;}    // UNAVAILABLE
-
-            if (r_size > size){
-                return r_size;  // ERROR
-            }
-
-            for (size_t i=0; i<r_size; i++){
-                buffer[i] = uart->read();
+            while (uart->available()){
+                // if (r_size == size){
+                //     return r_size;  // ERROR
+                // }
+                buffer[r_size] = uart->read();
+                r_size++;
             }
 
             return r_size;

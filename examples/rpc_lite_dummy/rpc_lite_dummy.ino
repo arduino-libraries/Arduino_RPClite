@@ -10,9 +10,10 @@ void setup() {
     //server.bind("add", add);
 
     // Simulate a call
-    int result = client.call("mult", 2, 3);
+    float result;
+    bool ok = client.call("mult", 2, 3, result);
     server.loop(); // Server processes message
-    result = client.call("mult", 5, 7);
+    ok = client.call("mult", 5, 7, result);
 }
 
 void loop() {
