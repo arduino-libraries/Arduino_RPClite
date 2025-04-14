@@ -13,5 +13,6 @@
 #include "server.h"
 
 #include "DummyTransport.h"
+#include "SerialTransport.h"
 
 #endif //RPCLITE_H

@@ -22,36 +22,36 @@ public:
     //}
 
     void loop() {
-        MsgPack::Unpacker unpacker;
-        if (!recv_msg(transport, unpacker)) return;
+        // MsgPack::Unpacker unpacker;
+        // if (!recv_msg(transport, unpacker)) return;
 
-        MsgPack::map_t<String, float> rm;
-        unpacker.deserialize(rm);
+        // MsgPack::map_t<String, float> rm;
+        // unpacker.deserialize(rm);
 
-        //auto obj = msg.get();
-        //auto map = obj.as<std::map<std::string, msgpack::object>>();
+        // //auto obj = msg.get();
+        // //auto map = obj.as<std::map<std::string, msgpack::object>>();
 
-        //std::string method = map["method"].as<std::string>();
-        //auto args = map["args"].as<std::vector<int>>();
-        //int id = map["id"].as<int>();
+        // //std::string method = map["method"].as<std::string>();
+        // //auto args = map["args"].as<std::vector<int>>();
+        // //int id = map["id"].as<int>();
 
-        //int result = handlers[method](args[0], args[1]);
+        // //int result = handlers[method](args[0], args[1]);
 
-        float result = rm["first"] + rm["second"];
+        // float result = rm["first"] + rm["second"];
 
-        //msgpack::sbuffer buffer;
-        //msgpack::packer<msgpack::sbuffer> pk(&buffer);
-        //pk.pack_map(2);
-        //pk.pack("result"); pk.pack(result);
-        //pk.pack("id");     pk.pack(id);
+        // //msgpack::sbuffer buffer;
+        // //msgpack::packer<msgpack::sbuffer> pk(&buffer);
+        // //pk.pack_map(2);
+        // //pk.pack("result"); pk.pack(result);
+        // //pk.pack("id");     pk.pack(id);
 
-        MsgPack::Packer packer;
-        MsgPack::map_t<String, float> resp;
+        // MsgPack::Packer packer;
+        // MsgPack::map_t<String, float> resp;
 
-        resp["result"] = result;
-        packer.serialize(resp);
+        // resp["result"] = result;
+        // packer.serialize(resp);
 
-        send_msg(transport, packer.packet());
+        // send_msg(transport, packer.packet());
     }
 };
 

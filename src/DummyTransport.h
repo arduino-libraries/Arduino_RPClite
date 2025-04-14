@@ -22,6 +22,15 @@ public:
         return size;
     }
 
+    size_t read_byte(uint8_t& r) override {
+        uint8_t b[1];
+        if (read(b, 1) != 1){
+            return 0;
+        };
+        r = b[0];
+        return 1;
+    }
+
     void push_data(const std::vector<uint8_t>& data) { inbuf.insert(inbuf.end(), data.begin(), data.end()); }
     const std::vector<uint8_t>& get_output() const { return outbuf; }
 };
