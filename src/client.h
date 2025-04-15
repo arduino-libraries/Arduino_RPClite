@@ -13,7 +13,8 @@ class RPCClient {
 public:
     RPCClient(ITransport& t) : transport(t) {}
 
-    bool call(MsgPack::str_t method, float a, float b, float& result) {
+    template<typename RType, typename... Args>
+    bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
 
         MsgPack::Packer packer;
 
@@ -23,9 +24,9 @@ public:
 
         packer.serialize(call_size, msg_type, msg_id, method);
 
-        MsgPack::arr_size_t arg_size(2);
+        MsgPack::arr_size_t arg_size(sizeof...(args));
 
-        packer.serialize(arg_size, a, b);
+        packer.serialize(arg_size, std::forward<Args>(args)...);
 
         send_msg(transport, packer.packet());
 
