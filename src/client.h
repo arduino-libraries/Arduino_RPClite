@@ -19,7 +19,13 @@ public:
 
         int msg_type = 0;
 
-        packer.serialize(msg_type, msg_id, method, a, b);
+        MsgPack::arr_size_t call_size(4);
+
+        packer.serialize(call_size, msg_type, msg_id, method);
+
+        MsgPack::arr_size_t arg_size(2);
+
+        packer.serialize(arg_size, a, b);
 
         send_msg(transport, packer.packet());
 
@@ -32,9 +38,9 @@ public:
             int r_msg_type;
             int r_msg_id;
             MsgPack::object::nil_t error;
-        
+
             bool ok = unpacker.deserialize(r_msg_type, r_msg_id, error, result);
-            
+
             if (!ok){
                 //Serial.println("could not serialize resp");
                 return false;
