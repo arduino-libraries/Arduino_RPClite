@@ -1,12 +1,10 @@
 #include <RpcLite.h>
-#include <HardwareSerial.h>
 
-HardwareSerial* uart = new HardwareSerial(0);
-
-SerialTransport transport(uart);
+SerialTransport transport(&Serial0);
 RPCClient client(transport);
 
 void setup() {
+    Serial0.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);

@@ -8,15 +8,13 @@
 
 class SerialTransport: public ITransport {
 
-    HardwareSerial* uart;
+    Stream* uart;
 
     public:
 
-        SerialTransport(HardwareSerial* _uart): uart(_uart){}
+        SerialTransport(Stream* _uart): uart(_uart){}
 
-        void begin(){
-            uart->begin(115200);
-        }
+        void begin(){}
 
         size_t write(const uint8_t* data, size_t size) override {
 
