@@ -40,7 +40,9 @@ public:
             int r_msg_id;
             MsgPack::object::nil_t error;
 
-            bool ok = unpacker.deserialize(r_msg_type, r_msg_id, error, result);
+            MsgPack::arr_size_t resp_size(4);
+
+            bool ok = unpacker.deserialize(resp_size, r_msg_type, r_msg_id, error, result);
 
             if (!ok){
                 //Serial.println("could not serialize resp");
