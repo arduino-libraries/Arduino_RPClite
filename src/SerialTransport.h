@@ -8,32 +8,32 @@
 
 class SerialTransport: public ITransport {
 
-    Stream* uart;
+    Stream* _stream;
 
     public:
 
-        SerialTransport(Stream* _uart): uart(_uart){}
+        SerialTransport(Stream* stream): _stream(stream){}
 
         void begin(){}
 
         size_t write(const uint8_t* data, size_t size) override {
 
             for (size_t i=0; i<size; i++){
-                uart->write(data[i]);
+                _stream->write(data[i]);
             }
 
             return size;
         }
 
         size_t read(uint8_t* buffer, size_t size) override {
-            
+
             size_t r_size = 0;
 
-            while (uart->available()){
-                // if (r_size == size){
-                //     return r_size;  // ERROR
-                // }
-                buffer[r_size] = uart->read();
+            while (_stream->available()){
+                if (r_size == size){
+                    return r_size;
+                }
+                buffer[r_size] = _stream->read();
                 r_size++;
             }
 

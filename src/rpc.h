@@ -8,6 +8,12 @@
 #include "transport.h"
 #include "MsgPack.h"
 
+#define MAX_BUFFER_SIZE 1024
+#define CHUNK_SIZE      64
+
+uint8_t raw_buffer[MAX_BUFFER_SIZE] = {0};
+size_t raw_buffer_fill = 0;
+
 inline void send_msg(ITransport& transport, const MsgPack::bin_t<uint8_t>& buffer) {
     size_t size = buffer.size();
 
@@ -23,34 +29,30 @@ inline void send_msg(ITransport& transport, const MsgPack::bin_t<uint8_t>& buffe
 
 inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker) {
 
-    size_t size = 256;
-    uint8_t raw_buffer[size] = {0};
+    uint8_t temp_buffer[CHUNK_SIZE] = {0};
 
-    int attempts = 0;
-
-    size_t bytes_read = 0;
-
-    while ((attempts<100) && (bytes_read == 0)) {
-        bytes_read = transport.read(raw_buffer, size);
-        attempts++;
-        delay(10);
-    }
+    size_t bytes_read = transport.read(temp_buffer, CHUNK_SIZE);
 
     if (bytes_read == 0){
         Serial.println("no bytes received");
         return false;
     }
 
-    unpacker.feed(raw_buffer, bytes_read);
-
-    Serial.println("got data");
-    for (size_t i=0; i<bytes_read; i++){
-        Serial.print(raw_buffer[i]);
-        Serial.print(" ");
+    if (raw_buffer_fill + bytes_read > MAX_BUFFER_SIZE){
+        // ERROR: trying to recover flushing the buffer
+        flush_buffer();
+        return false;
     }
-    Serial.println("");
 
-    return true;
+    memcpy(raw_buffer + raw_buffer_fill, temp_buffer, bytes_read);
+    raw_buffer_fill += bytes_read;
+
+    return unpacker.feed(raw_buffer, raw_buffer_fill);
+
+}
+
+inline void flush_buffer(){
+    raw_buffer_fill = 0;
 }
 
 #endif //RPCLITE_RPC_H

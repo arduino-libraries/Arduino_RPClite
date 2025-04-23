@@ -32,32 +32,32 @@ public:
 
         MsgPack::Unpacker unpacker;
 
-        delay(100);
+        // blocking call
+        while (!recv_msg(transport, unpacker)){delay(1)};
 
-        if (recv_msg(transport, unpacker)) {
-            
-            int r_msg_type;
-            int r_msg_id;
-            MsgPack::object::nil_t error;
+        int r_msg_type;
+        int r_msg_id;
+        MsgPack::object::nil_t error;
 
-            MsgPack::arr_size_t resp_size(4);
+        MsgPack::arr_size_t resp_size(4);
 
-            bool ok = unpacker.deserialize(resp_size, r_msg_type, r_msg_id, error, result);
+        bool ok = unpacker.deserialize(resp_size, r_msg_type, r_msg_id, error, result);
 
-            if (!ok){
-                //Serial.println("could not serialize resp");
-                return false;
-            }
-
-            if (r_msg_id != msg_id){
-                //Serial.println("msg_id mismatch");
-                return false;
-            }
-
-            msg_id += 1;
-            return true;
-
+        if (!ok){
+            //Serial.println("could not serialize resp");
+            return false;
         }
+
+        if (r_msg_id != msg_id){
+            //Serial.println("msg_id mismatch");
+            return false;
+        }
+
+        msg_id += 1;
+
+        flush_buffer();
+        return true;
+
 
         return false;
     }
