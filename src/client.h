@@ -33,7 +33,7 @@ public:
         MsgPack::Unpacker unpacker;
 
         // blocking call
-        while (!recv_msg(transport, unpacker)){delay(1)};
+        while (!recv_msg(transport, unpacker)){delay(1);}
 
         int r_msg_type;
         int r_msg_id;

@@ -14,6 +14,10 @@
 uint8_t raw_buffer[MAX_BUFFER_SIZE] = {0};
 size_t raw_buffer_fill = 0;
 
+inline void flush_buffer(){
+    raw_buffer_fill = 0;
+}
+
 inline void send_msg(ITransport& transport, const MsgPack::bin_t<uint8_t>& buffer) {
     size_t size = buffer.size();
 
@@ -49,10 +53,6 @@ inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker) {
 
     return unpacker.feed(raw_buffer, raw_buffer_fill);
 
-}
-
-inline void flush_buffer(){
-    raw_buffer_fill = 0;
 }
 
 #endif //RPCLITE_RPC_H
