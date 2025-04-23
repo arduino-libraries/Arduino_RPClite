@@ -1,7 +1,7 @@
 import serial
 import msgpack
 import threading
-
+from io import BytesIO
 
 REQUEST = 0
 RESPONSE = 1
@@ -53,18 +53,18 @@ class SerialServer:
         threading.Thread(target=self._run, daemon=True).start()
 
     def _run(self):
-        unpacker = msgpack.Unpacker(raw=False)
         while self.running:
             try:
                 data = self.ser.read(1024)
                 if data:
-                    unpacker.feed(data)
+                    unpacker = msgpack.Unpacker(BytesIO(data))
                     for message in unpacker:
                         response = self.handle_message(message)
                         if response is not None:
                             self.ser.write(response)
             except Exception as e:
                 print(f"Error: {e}")
+        print("Server stopped")
 
     def stop(self):
         self.running = False
