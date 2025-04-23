@@ -28,7 +28,8 @@ void blink_before(){
 void loop() {
     float result;
     blink_before();
-    bool ok = client.call("mult", result, 2.0, 3.0);
+    //bool ok = client.call("mult", result, 2.0, 3.0);
+    bool ok = client.call("divi", result, 2.0, 0.0);
 
     if (ok) {
         Serial.print("Result: ");

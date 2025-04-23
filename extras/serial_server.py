@@ -7,6 +7,7 @@ REQUEST = 0
 RESPONSE = 1
 NOTIFY = 2
 
+GENERIC_EXCEPTION = 0xff
 
 class SerialServer:
     def __init__(self, port, baudrate=115200):
@@ -24,7 +25,7 @@ class SerialServer:
             result = self.callbacks[command](*args)
             return [RESPONSE, msg_id, None, result]
         except Exception as e:
-            print("Not handling exceptions yet")
+            return [RESPONSE, msg_id, [GENERIC_EXCEPTION, str(e)] ,None]
 
     def handle_message(self, message) -> bytes:
         """Process incoming messages"""

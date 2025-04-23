@@ -5,6 +5,7 @@
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
 #include "rpc.h"
+#include "error.h"
 
 class RPCClient {
     ITransport& transport;
@@ -37,19 +38,33 @@ public:
 
         int r_msg_type;
         int r_msg_id;
-        MsgPack::object::nil_t error;
+        MsgPack::object::nil_t nil;
+        RpcError rpc_error;
 
         MsgPack::arr_size_t resp_size(4);
 
-        bool ok = unpacker.deserialize(resp_size, r_msg_type, r_msg_id, error, result);
+        if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id, nil, result)){
+            //Try to deserialize for a RpcError
+            if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id, rpc_error, nil)){
+                Serial.println("Unable to deserialize");
+                Serial.print(raw_buffer_fill);
+                for (size_t i = 0; i<raw_buffer_fill; i++){
+                    Serial.print(raw_buffer[i], HEX);
+                    Serial.print("-");
+                }
+                flush_buffer();
+                return false;
+            } else {
+                Serial.print("RPC produced an error: ");
+                Serial.println(rpc_error.code);
+                Serial.println(rpc_error.traceback);
+            }
 
-        if (!ok){
-            //Serial.println("could not serialize resp");
-            return false;
         }
 
         if (r_msg_id != msg_id){
             //Serial.println("msg_id mismatch");
+            flush_buffer();
             return false;
         }
 
@@ -58,8 +73,6 @@ public:
         flush_buffer();
         return true;
 
-
-        return false;
     }
 };
 
