@@ -55,13 +55,11 @@ public:
 
         if (!unpacker.unpackNil()){
             Serial.print("RPC error - ");
-            int error_code;
-            MsgPack::str_t error_str;
-            unpacker.deserialize(error_code, error_str);
+            unpacker.deserialize(rpc_error.code, rpc_error.traceback);
             Serial.print(" error code: ");
-            Serial.print(error_code);
+            Serial.print(rpc_error.code);
             Serial.print(" error str: ");
-            Serial.println(error_str);
+            Serial.println(rpc_error.traceback);
             unpacker.unpackNil();
             msg_id += 1;
             flush_buffer();
