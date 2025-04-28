@@ -47,7 +47,9 @@ public:
             //Try to deserialize for a RpcError
             if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id, rpc_error, nil)){
                 Serial.println("Unable to deserialize");
+                Serial.print("buf len ");
                 Serial.print(raw_buffer_fill);
+                Serial.print(": ");
                 for (size_t i = 0; i<raw_buffer_fill; i++){
                     Serial.print(raw_buffer[i], HEX);
                     Serial.print("-");
