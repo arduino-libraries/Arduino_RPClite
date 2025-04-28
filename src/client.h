@@ -53,18 +53,21 @@ public:
             return false;
         }
 
-        if (!unpacker.unpackNil()){
+        if (!unpacker.unpackable(nil)){
             Serial.print("RPC error - ");
-            unpacker.deserialize(rpc_error.code, rpc_error.traceback);
+            if (!unpacker.deserialize(rpc_error, nil)){
+                Serial.println("wrong error msg received");
+                flush_buffer();
+                return false;
+            }
             Serial.print(" error code: ");
             Serial.print(rpc_error.code);
             Serial.print(" error str: ");
             Serial.println(rpc_error.traceback);
-            unpacker.unpackNil();
             msg_id += 1;
             flush_buffer();
             return false;
-        } else if (!unpacker.deserialize(result)){
+        } else if (!unpacker.deserialize(nil, result)){
             Serial.println("Unexpected result");
             flush_buffer();
             return false;
