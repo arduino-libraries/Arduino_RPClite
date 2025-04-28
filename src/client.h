@@ -41,31 +41,33 @@ public:
         MsgPack::object::nil_t nil;
         RpcError rpc_error;
 
-        MsgPack::arr_size_t resp_size(4);
+        MsgPack::arr_size_t resp_size;
 
-        if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id, nil, result)){
-            //Try to deserialize for a RpcError
-            if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id, rpc_error, nil)){
-                Serial.println("Unable to deserialize");
-                Serial.print("buf len ");
-                Serial.print(raw_buffer_fill);
-                Serial.print(": ");
-                for (size_t i = 0; i<raw_buffer_fill; i++){
-                    Serial.print(raw_buffer[i], HEX);
-                    Serial.print("-");
-                }
-                flush_buffer();
-                return false;
-            } else {
-                Serial.print("RPC produced an error: ");
-                Serial.println(rpc_error.code);
-                Serial.println(rpc_error.traceback);
-            }
+        if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
+            Serial.println("malformed response");
+        };
 
+        if ((resp_size.size() != 4) || (r_msg_type != 1) || (r_msg_id != msg_id)){
+            Serial.println("wrong msg received");
+            flush_buffer();
+            return false;
         }
 
-        if (r_msg_id != msg_id){
-            //Serial.println("msg_id mismatch");
+        if (!unpacker.unpackNil()){
+            Serial.print("RPC error - ");
+            int error_code;
+            MsgPack::str_t error_str;
+            unpacker.deserialize(error_code, error_str);
+            Serial.print(" error code: ");
+            Serial.print(error_code);
+            Serial.print(" error str: ");
+            Serial.println(error_str);
+            unpacker.unpackNil();
+            msg_id += 1;
+            flush_buffer();
+            return false;
+        } else if (!unpacker.deserialize(result)){
+            Serial.println("Unexpected result");
             flush_buffer();
             return false;
         }
