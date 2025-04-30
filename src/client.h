@@ -50,12 +50,12 @@ public:
 
             if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
                 Serial.println("malformed response");
+                continue;
             };
 
             if ((resp_size.size() != 4) || (r_msg_type != 1) || (r_msg_id != msg_id)){
                 Serial.println("wrong msg received");
-                flush_buffer();
-                return false;
+                continue;
             }
 
             if (!unpacker.unpackable(nil)){
