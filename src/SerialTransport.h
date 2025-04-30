@@ -35,6 +35,7 @@ class SerialTransport: public ITransport {
                 }
                 buffer[r_size] = _stream->read();
                 r_size++;
+                delay(1);
             }
 
             return r_size;

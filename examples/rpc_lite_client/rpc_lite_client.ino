@@ -1,13 +1,14 @@
 #include <RpcLite.h>
 
-SerialTransport transport(&Serial0);
+SerialTransport transport(&Serial2);
 RPCClient client(transport);
 
 void setup() {
-    Serial0.begin(115200);
+    Serial2.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
+    while(!Serial);
 }
 
 void blink_before(){
