@@ -34,43 +34,48 @@ public:
         MsgPack::Unpacker unpacker;
 
         // blocking call
-        while (!recv_msg(transport, unpacker)){delay(1);}
 
-        int r_msg_type;
-        int r_msg_id;
-        MsgPack::object::nil_t nil;
-        RpcError rpc_error;
+        while (true){
+            if (!recv_msg(transport, unpacker)){
+                delay(1);
+                continue;
+            }
 
-        MsgPack::arr_size_t resp_size;
+            int r_msg_type;
+            int r_msg_id;
+            MsgPack::object::nil_t nil;
+            RpcError rpc_error;
 
-        if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
-            Serial.println("malformed response");
-        };
+            MsgPack::arr_size_t resp_size;
 
-        if ((resp_size.size() != 4) || (r_msg_type != 1) || (r_msg_id != msg_id)){
-            Serial.println("wrong msg received");
-            flush_buffer();
-            return false;
-        }
+            if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
+                Serial.println("malformed response");
+            };
 
-        if (!unpacker.unpackable(nil)){
-            Serial.print("RPC error - ");
-            if (!unpacker.deserialize(rpc_error, nil)){
-                Serial.println("wrong error msg received");
+            if ((resp_size.size() != 4) || (r_msg_type != 1) || (r_msg_id != msg_id)){
+                Serial.println("wrong msg received");
                 flush_buffer();
                 return false;
             }
-            Serial.print(" error code: ");
-            Serial.print(rpc_error.code);
-            Serial.print(" error str: ");
-            Serial.println(rpc_error.traceback);
-            msg_id += 1;
-            flush_buffer();
-            return false;
-        } else if (!unpacker.deserialize(nil, result)){
-            Serial.println("Unexpected result");
-            flush_buffer();
-            return false;
+
+            if (!unpacker.unpackable(nil)){
+                Serial.print("RPC error - ");
+                if (!unpacker.deserialize(rpc_error, nil)){
+                    Serial.println("wrong error msg received");
+                    continue;
+                }
+                Serial.print(" error code: ");
+                Serial.print(rpc_error.code);
+                Serial.print(" error str: ");
+                Serial.println(rpc_error.traceback);
+                msg_id += 1;
+                flush_buffer();
+                return false;
+            } else if (!unpacker.deserialize(nil, result)){
+                Serial.println("Unexpected result");
+                continue;
+            }
+            break;
         }
 
         msg_id += 1;

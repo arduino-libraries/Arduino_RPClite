@@ -9,7 +9,7 @@
 #include "MsgPack.h"
 
 #define MAX_BUFFER_SIZE 1024
-#define CHUNK_SIZE      64
+#define CHUNK_SIZE      32
 
 uint8_t raw_buffer[MAX_BUFFER_SIZE] = {0};
 size_t raw_buffer_fill = 0;
