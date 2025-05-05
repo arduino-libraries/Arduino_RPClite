@@ -1,4 +1,4 @@
-#include <RpcLite.h>
+#include <RPClite.h>
 
 DummyTransport transport;
 RPCServer server(transport);

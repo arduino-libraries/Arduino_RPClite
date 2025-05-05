@@ -1,4 +1,4 @@
-#include <RpcLite.h>
+#include <RPClite.h>
 
 SerialTransport transport(&Serial2);
 RPCClient client(transport);
