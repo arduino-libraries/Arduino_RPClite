@@ -8,6 +8,11 @@
 #include "transport.h"
 #include "MsgPack.h"
 
+
+#define CALL_MSG        0
+#define RESP_MSG        1
+#define NOTIFY_MSG      2
+
 #define MAX_BUFFER_SIZE 1024
 #define CHUNK_SIZE      32
 

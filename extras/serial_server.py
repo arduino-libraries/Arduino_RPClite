@@ -27,7 +27,14 @@ class SerialServer:
         except Exception as e:
             return [RESPONSE, msg_id, [GENERIC_EXCEPTION, str(e)] ,None]
 
-    def handle_message(self, message) -> bytes:
+    def on_notify(self, command, args):
+        """Execute the callback"""
+        try:
+            self.callbacks[command](*args)
+        except Exception as e:
+            print(f"Exception on notification... the client will never know {str(e)}")
+
+    def handle_message(self, message) -> bytes | None:
         """Process incoming messages"""
         msgsize = len(message)
         if msgsize != 4 and msgsize != 3:
@@ -40,9 +47,8 @@ class SerialServer:
             raise Exception("Server receiving RESPONSE not implemented")
             # response = self.on_response(message[1], message[2], message[3])
         elif msgtype == NOTIFY:
-            print("Server does nothing on notification")
-            # self.on_notify(message[1], message[2])
-            response = None
+            self.on_notify(message[1], message[2])
+            return None
         else:
             raise Exception("Unknown message type: type = {0}".format(msgtype))
 

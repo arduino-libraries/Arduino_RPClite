@@ -14,12 +14,29 @@ class RPCClient {
 public:
     RPCClient(ITransport& t) : transport(t) {}
 
+    template<typename... Args>
+    void notify(const MsgPack::str_t method, Args&&... args)  {
+        MsgPack::Packer packer;
+
+        int msg_type = NOTIFY_MSG;
+
+        MsgPack::arr_size_t notify_size(3);
+
+        packer.serialize(notify_size, msg_type, method);
+
+        MsgPack::arr_size_t arg_size(sizeof...(args));
+
+        packer.serialize(arg_size, std::forward<Args>(args)...);
+
+        send_msg(transport, packer.packet());
+    }
+
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
 
         MsgPack::Packer packer;
 
-        int msg_type = 0;
+        int msg_type = CALL_MSG;
 
         MsgPack::arr_size_t call_size(4);
 
@@ -37,7 +54,12 @@ public:
 
         while (true){
             if (!recv_msg(transport, unpacker)){
+                // If not receiving new bytes yield first then attempt a new deserialization
                 delay(1);
+            }
+
+            if (raw_buffer_fill == 0){
+                //Serial.println("Empty buffer... waiting response");
                 continue;
             }
 

@@ -44,5 +44,16 @@ void loop() {
         Serial.println(result);
     }
 
+    int rand_int;
+    ok = client.call("get_rand", rand_int);
+
+    if (ok) {
+        Serial.print("Random int from server: ");
+        Serial.println(rand_int);
+    }
+
+    client.notify("blink");
+    Serial.println("Sent a blink notification");
+
     delay(2000);
 }

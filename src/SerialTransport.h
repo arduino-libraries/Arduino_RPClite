@@ -35,6 +35,7 @@ class SerialTransport: public ITransport {
                 }
                 buffer[r_size] = _stream->read();
                 r_size++;
+                // TODO the following delay is essential for GIGA to work. Is it worth making giga-specific?
                 delay(1);
             }
 
