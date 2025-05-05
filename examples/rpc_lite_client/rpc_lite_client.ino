@@ -55,5 +55,19 @@ void loop() {
     client.notify("blink");
     Serial.println("Sent a blink notification");
 
+    int duration_ms = 100;
+    client.notify("blink", duration_ms);
+    Serial.println("Sent a 100ms blink notification");
+
+    MsgPack::object::nil_t out;
+    ok = client.call("blink", out);
+    Serial.print("Sent a blink RPC -> ");
+
+    if (ok) {
+        Serial.println("Server returns without issues");
+    } else {
+        Serial.println("Server could not handle a notification as a call");
+    }
+
     delay(2000);
 }

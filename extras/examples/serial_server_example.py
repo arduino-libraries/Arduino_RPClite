@@ -15,11 +15,14 @@ def divide(a, b):
         print("0 denominator: this will raise an exception")
     return a/b
 
-def blink():
+def blink(duration=None):
     """
-    Used for notification
+    Used for notification w/o parameter. Use also for testing calls returning None
     """
-    print("Blink maybe")
+    if duration is not None:
+        print(f"Blink for {duration}")
+    else:
+        print("Blink maybe")
 
 def get_rand():
     """
