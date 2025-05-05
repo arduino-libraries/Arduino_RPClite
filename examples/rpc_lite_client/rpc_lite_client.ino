@@ -39,7 +39,7 @@ void loop() {
 
     ok = client.call("divi", result, 2.0, 0.0);
     if (!ok) {
-        Serial.print("Testing Server-side exception OK");
+        Serial.println("Testing Server-side exception OK");
     }
 
     int rand_int;
