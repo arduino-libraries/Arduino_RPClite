@@ -130,7 +130,11 @@ func getFQBNAndPorts(t *testing.T) (fqbn string, rpcPort string, uploadPort stri
 				Fqbn string `json:"fqbn"`
 			} `json:"matching_boards"`
 			Port struct {
-				Address string `json:"address"`
+				Address    string `json:"address"`
+				Properties struct {
+					Vid string `json:"vid"`
+					Pid string `json:"pid"`
+				} `json:"properties"`
 			} `json:"port"`
 		} `json:"detected_ports"`
 	}
@@ -144,6 +148,10 @@ func getFQBNAndPorts(t *testing.T) (fqbn string, rpcPort string, uploadPort stri
 	}
 	for _, port := range cliResult.DetectedPorts {
 		for _, board := range port.MatchingBoards {
+			if board.Fqbn == "arduino:mbed_giga:giga" {
+				checkFQBN(board.Fqbn)
+				uploadPort = port.Port.Address
+			}
 			if board.Fqbn == "arduino:samd:arduino_zero_edbg" {
 				checkFQBN("arduino:samd:arduino_zero_native")
 				rpcPort = port.Port.Address
@@ -151,6 +159,13 @@ func getFQBNAndPorts(t *testing.T) (fqbn string, rpcPort string, uploadPort stri
 			if board.Fqbn == "arduino:samd:arduino_zero_native" {
 				checkFQBN(board.Fqbn)
 				uploadPort = port.Port.Address
+			}
+		}
+	}
+	if rpcPort == "" {
+		for _, port := range cliResult.DetectedPorts {
+			if port.Port.Properties.Vid == "0x0483" && port.Port.Properties.Pid == "0x374B" {
+				rpcPort = port.Port.Address
 			}
 		}
 	}
