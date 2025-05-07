@@ -160,11 +160,18 @@ func getFQBNAndPorts(t *testing.T) (fqbn string, rpcPort string, uploadPort stri
 				checkFQBN(board.Fqbn)
 				uploadPort = port.Port.Address
 			}
+			if board.Fqbn == "arduino:mbed_nano:nanorp2040connect" {
+				checkFQBN(board.Fqbn)
+				uploadPort = port.Port.Address
+			}
 		}
 	}
 	if rpcPort == "" {
 		for _, port := range cliResult.DetectedPorts {
 			if port.Port.Properties.Vid == "0x0483" && port.Port.Properties.Pid == "0x374B" {
+				rpcPort = port.Port.Address
+			}
+			if port.Port.Properties.Vid == "0x1A86" && port.Port.Properties.Pid == "0x55D4" {
 				rpcPort = port.Port.Address
 			}
 		}
