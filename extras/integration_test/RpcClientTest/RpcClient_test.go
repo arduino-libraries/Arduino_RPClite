@@ -20,7 +20,7 @@ func TestBasicComm(t *testing.T) {
 	fqbn, _, uploadPort := getFQBNAndPorts(t)
 	{
 		// Upload the sketch
-		cli, err := paths.NewProcess(nil, "arduino-cli", "compile", "--fqbn", fqbn, "--library", "../..", "-u", "-p", uploadPort)
+		cli, err := paths.NewProcess(nil, "arduino-cli", "compile", "--fqbn", fqbn, "--library", "../../..", "-u", "-p", uploadPort)
 		require.NoError(t, err)
 		cli.RedirectStderrTo(os.Stderr)
 		cli.RedirectStdoutTo(os.Stdout)
