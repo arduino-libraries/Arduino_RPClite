@@ -11,6 +11,7 @@
 #include "transport.h"
 #include "client.h"
 #include "server.h"
+#include "wrapper.h"
 
 #include "DummyTransport.h"
 #include "SerialTransport.h"

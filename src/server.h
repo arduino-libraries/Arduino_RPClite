@@ -6,6 +6,7 @@
 #define RPCLITE_SERVER_H
 
 #include "rpc.h"
+#include "error.h"
 
 class RPCServer {
     ITransport& transport;
