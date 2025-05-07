@@ -25,7 +25,7 @@ class SerialServer:
             result = self.callbacks[command](*args)
             return [RESPONSE, msg_id, None, result]
         except Exception as e:
-            return [RESPONSE, msg_id, [GENERIC_EXCEPTION, str(e)] ,None]
+            return [RESPONSE, msg_id, [GENERIC_EXCEPTION, str(e)], None]
 
     def on_notify(self, command, args):
         """Execute the callback"""
