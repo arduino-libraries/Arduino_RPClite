@@ -58,7 +58,7 @@ public:
                 delay(1);
             }
 
-            if (raw_buffer_fill == 0){
+            if (is_empty_buffer()){
                 //Serial.println("Empty buffer... waiting response");
                 continue;
             }

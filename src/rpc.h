@@ -23,6 +23,10 @@ inline void flush_buffer(){
     raw_buffer_fill = 0;
 }
 
+inline bool is_empty_buffer() {
+    return raw_buffer_fill == 0;
+}
+
 inline void send_msg(ITransport& transport, const MsgPack::bin_t<uint8_t>& buffer) {
     size_t size = buffer.size();
     transport.write(reinterpret_cast<const uint8_t*>(buffer.data()), size);
@@ -47,6 +51,7 @@ inline bool recv_msg(ITransport& transport, MsgPack::Unpacker& unpacker) {
     memcpy(raw_buffer + raw_buffer_fill, temp_buffer, bytes_read);
     raw_buffer_fill += bytes_read;
 
+    unpacker.clear();
     return unpacker.feed(raw_buffer, raw_buffer_fill);
 
 }
