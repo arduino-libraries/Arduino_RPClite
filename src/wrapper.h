@@ -1,6 +1,8 @@
 #ifndef RPCLITE_WRAPPER_H
 #define RPCLITE_WRAPPER_H
 
+#include "error.h"
+
 // C++11-compatible function_traits
 // Primary template: fallback
 template<typename T>
@@ -65,9 +67,32 @@ public:
         return _func(args...);
     }
 
-    R operator()(MsgPack::Unpacker& unpacker) {
+    bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         auto args = deserialize_all<Args...>(unpacker);
-        return invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+        MsgPack::object::nil_t nil;
+
+#ifdef HANDLE_RPC_ERRORS
+    try{
+#endif
+        if constexpr (std::is_void<R>::value){
+            invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+            packer.serialize(nil, nil);
+            return true;
+        } else {
+            R out = invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+            packer.serialize(nil, out);
+            return true;
+        }
+#ifdef HANDLE_RPC_ERRORS
+    } catch {
+        RpcError error;
+        error.code = 0xFE;
+        error.string = "RPC error";
+        packer.serialize(error, nil);
+        return false;
+    }
+#endif
+
     }
 
 private:

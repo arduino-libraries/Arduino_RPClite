@@ -8,14 +8,25 @@ void say_hello() {
     Serial.println("Hello!");
 }
 
+float divide(float n, float d){
+    if (d==0) {
+        Serial.println("This would cause an error");
+        return 0.0;
+    }
+    return n/d;
+}
+
 int a = 10;
 int b = 20;
 
 MsgPack::Packer packer;
 MsgPack::Unpacker unpacker;
 
+MsgPack::Packer out_packer;
+
 auto wrapped_add = wrap(add);
 auto wrapped_hello = wrap(say_hello);
+auto wrapped_divide = wrap(divide);
 
 void blink_before(){
     digitalWrite(LED_BUILTIN, HIGH);
@@ -44,15 +55,49 @@ void loop() {
     unpacker.clear();
     unpacker.feed(packer.data(), packer.size());
 
+    out_packer.clear();
+
     blink_before();
     int out = wrapped_add(5, 3);
-    int out_unpack = wrapped_add(unpacker);
+
+    bool unpack_ok = wrapped_add(unpacker, out_packer);
 
     Serial.print("simple call: ");
     Serial.println(out);
-    Serial.print("unpacker call: ");
-    Serial.println(out_unpack);
+
+    if (unpack_ok){
+        Serial.print("unpacker call: ");
+
+        for (size_t i=0; i<out_packer.size(); i++){
+            Serial.print(out_packer.data()[i], HEX);
+            Serial.print(".");
+        }
+
+        Serial.println(" ");
+    }
     
+    float numerator = 1;
+    float denominator = 0;
+
+    packer.clear();
+    packer.serialize(numerator, denominator);
+    unpacker.clear();
+    unpacker.feed(packer.data(), packer.size());
+    out_packer.clear();
+
+    bool should_be_false = wrapped_divide(unpacker, out_packer);
+
+    if (should_be_false){
+        Serial.print("RPC error call: ");
+
+        for (size_t i=0; i<out_packer.size(); i++){
+            Serial.print(out_packer.data()[i], HEX);
+            Serial.print(".");
+        }
+
+        Serial.println(" ");
+    }
+
     wrapped_hello();
     delay(1000);
 }

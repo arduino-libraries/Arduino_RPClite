@@ -7,6 +7,7 @@
 
 #include "Arduino.h"
 
+//#define HANDLE_RPC_ERRORS
 #include "rpc.h"
 #include "transport.h"
 #include "client.h"
