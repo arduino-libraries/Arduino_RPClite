@@ -62,7 +62,7 @@ func TestBasicComm(t *testing.T) {
 		debugSer.Close()
 	}()
 
-	// RPC: Receive an RPC call to the "mult" method with 2 arguments
+	// 1: Receive an RPC call to the "mult" method with 2 arguments
 	// and send back the result
 	t.Run("RPCClientCallFloatArgs", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
@@ -74,7 +74,7 @@ func TestBasicComm(t *testing.T) {
 		expectDebug("-> 6.00\r\n")
 	})
 
-	// RPC: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
+	// 2: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
 	// and send back an error with [int, string] format
 	t.Run("RPCClientCallFloatArgsError", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
@@ -86,7 +86,7 @@ func TestBasicComm(t *testing.T) {
 		expectDebug("-> error\r\n")
 	})
 
-	// RPC: Receive an RPC call to the "or" method with 1 or 2 arguments
+	// 3, 4: Receive an RPC call to the "or" method with 1 or 2 arguments
 	// and send back the result
 	t.Run("RPCClientCallBoolArgs", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
@@ -104,6 +104,18 @@ func TestBasicComm(t *testing.T) {
 		require.NoError(t, err)
 		expectDebug("or(false)\r\n")
 		expectDebug("-> false\r\n")
+	})
+
+	// 5: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
+	// and send back an error with [int, string] format with a long string
+	t.Run("RPCClientCallFloatArgsErrorWithLongString", func(t *testing.T) {
+		arr, err := in.DecodeSlice()
+		require.NoError(t, err)
+		require.Equal(t, []any{int8(0), int8(5), "mult", []any{2.0}}, arr)
+		err = out.Encode([]any{1, 5, []any{2, "method get_led_state not available"}, nil})
+		require.NoError(t, err)
+		expectDebug("mult(2.0)\r\n")
+		expectDebug("-> error\r\n")
 	})
 
 	// RPC: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)

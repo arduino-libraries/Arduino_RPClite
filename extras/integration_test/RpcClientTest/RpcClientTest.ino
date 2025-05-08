@@ -22,9 +22,15 @@ void setup() {
 
     while (!DEBUG) { /* WAIT for serial port to connect */ }
 
+    // 1
     testSuccessfulCallFl64();
+    // 2
     testWrongCall();
+    // 3, 4
     testSuccessfulCallBool();
+    // 5
+    testWrongCall();
+
     // testWrongCall();
 }
 
