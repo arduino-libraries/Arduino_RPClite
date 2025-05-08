@@ -8,6 +8,12 @@ void say_hello() {
     Serial.println("Hello!");
 }
 
+int a = 10;
+int b = 20;
+
+MsgPack::Packer packer;
+MsgPack::Unpacker unpacker;
+
 auto wrapped_add = wrap(add);
 auto wrapped_hello = wrap(say_hello);
 
@@ -31,8 +37,22 @@ void setup() {
 }
 
 void loop() {
+
+    packer.clear();
+    packer.serialize(a, b);
+
+    unpacker.clear();
+    unpacker.feed(packer.data(), packer.size());
+
     blink_before();
-    wrapped_add(5, 3);
+    int out = wrapped_add(5, 3);
+    int out_unpack = wrapped_add(unpacker);
+
+    Serial.print("simple call: ");
+    Serial.println(out);
+    Serial.print("unpacker call: ");
+    Serial.println(out_unpack);
+    
     wrapped_hello();
     delay(1000);
 }

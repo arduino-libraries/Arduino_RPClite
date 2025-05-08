@@ -7,6 +7,7 @@
 
 #include "rpc.h"
 #include "error.h"
+#include "wrapper.h"
 
 class RPCServer {
     ITransport& transport;

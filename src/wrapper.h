@@ -1,38 +1,96 @@
-#include <iostream>
-#include <functional>
-#include <tuple>
+#ifndef RPCLITE_WRAPPER_H
+#define RPCLITE_WRAPPER_H
 
-// --- FunctionWrapper definition ---
+// C++11-compatible function_traits
+// Primary template: fallback
+template<typename T>
+struct function_traits;
+
+// Function pointer
 template<typename R, typename... Args>
-class FunctionWrapper {
-public:
-    using FuncType = R (*)(Args...);
+struct function_traits<R(*)(Args...)> {
+    using signature = R(Args...);
+};
 
-    FunctionWrapper(FuncType f) : func(f) {}
+// std::function
+template<typename R, typename... Args>
+struct function_traits<std::function<R(Args...)>> {
+    using signature = R(Args...);
+};
+
+// Member function pointer (including lambdas)
+template<typename C, typename R, typename... Args>
+struct function_traits<R(C::*)(Args...) const> {
+    using signature = R(Args...);
+};
+
+// Deduction helper for lambdas
+template<typename T>
+struct function_traits {
+    using signature = typename function_traits<decltype(&T::operator())>::signature;
+};
+
+
+// C++11-compatible index_sequence
+template<std::size_t... Is>
+struct index_sequence { };
+
+template<std::size_t N, std::size_t... Is>
+struct make_index_sequence_impl : make_index_sequence_impl<N - 1, N - 1, Is...> { };
+
+template<std::size_t... Is>
+struct make_index_sequence_impl<0, Is...> {
+    typedef index_sequence<Is...> type;
+};
+
+template<std::size_t N>
+using make_index_sequence = typename make_index_sequence_impl<N>::type;
+
+// Helper to invoke a function with a tuple of arguments
+template<typename F, typename Tuple, std::size_t... I>
+auto invoke_with_tuple(F&& f, Tuple&& t, index_sequence<I...>)
+    -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
+    return f(std::get<I>(std::forward<Tuple>(t))...);
+}
+
+template<typename F>
+class RpcFunctionWrapper;
+
+template<typename R, typename... Args>
+class RpcFunctionWrapper<R(Args...)> {
+public:
+    RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
     R operator()(Args... args) {
-        Serial.println("Calling function with args...");
+        return _func(args...);
+    }
 
-        if constexpr (std::is_void<R>::value) {
-            func(args...);
-            Serial.println("Return: void");
-            return;
-        } else {
-            R result = func(args...);
-            Serial.print("Result: ");
-            Serial.print(result);
-            Serial.println();
-            return result;
-        }
-
+    R operator()(MsgPack::Unpacker& unpacker) {
+        auto args = deserialize_all<Args...>(unpacker);
+        return invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
     }
 
 private:
-    FuncType func;
+    std::function<R(Args...)> _func;
+
+    template<typename... Ts>
+    std::tuple<Ts...> deserialize_all(MsgPack::Unpacker& unpacker) {
+        return std::make_tuple(deserialize_single<Ts>(unpacker)...);
+    }
+
+    template<typename T>
+    static T deserialize_single(MsgPack::Unpacker& unpacker) {
+        T value;
+        unpacker.deserialize(value);
+        return value;
+    }
 };
 
-// --- Wraps function function pointers only. Lambdas and member functions not currently supported ---
-template<typename R, typename... Args>
-FunctionWrapper<R, Args...> wrap(R (*f)(Args...)) {
-    return FunctionWrapper<R, Args...>(f);
+
+template<typename F>
+auto wrap(F&& f) -> RpcFunctionWrapper<typename function_traits<typename std::decay<F>::type>::signature> {
+    using Signature = typename function_traits<typename std::decay<F>::type>::signature;
+    return RpcFunctionWrapper<Signature>(std::forward<F>(f));
 }
+
+#endif
