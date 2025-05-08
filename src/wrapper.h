@@ -2,6 +2,7 @@
 #define RPCLITE_WRAPPER_H
 
 #include "error.h"
+#include <stdexcept>
 
 // C++11-compatible function_traits
 // Primary template: fallback
@@ -72,7 +73,7 @@ public:
         MsgPack::object::nil_t nil;
 
 #ifdef HANDLE_RPC_ERRORS
-    try{
+    try {
 #endif
         if constexpr (std::is_void<R>::value){
             invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
@@ -84,10 +85,10 @@ public:
             return true;
         }
 #ifdef HANDLE_RPC_ERRORS
-    } catch {
+    } catch (const std::exception& e) {
         RpcError error;
         error.code = 0xFE;
-        error.string = "RPC error";
+        error.traceback = "RPC error";
         packer.serialize(error, nil);
         return false;
     }

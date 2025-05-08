@@ -9,10 +9,6 @@ void say_hello() {
 }
 
 float divide(float n, float d){
-    if (d==0) {
-        Serial.println("This would cause an error");
-        return 0.0;
-    }
     return n/d;
 }
 
@@ -87,16 +83,18 @@ void loop() {
 
     bool should_be_false = wrapped_divide(unpacker, out_packer);
 
-    if (should_be_false){
-        Serial.print("RPC error call: ");
-
-        for (size_t i=0; i<out_packer.size(); i++){
-            Serial.print(out_packer.data()[i], HEX);
-            Serial.print(".");
-        }
-
-        Serial.println(" ");
+    if (!should_be_false){
+        Serial.println("RPC error call divide by zero ");
+    } else {
+        Serial.println("RPC error call divide by zero was handled externally nb CA 7F 80 00 00 represents inf big endian");
     }
+    
+    for (size_t i=0; i<out_packer.size(); i++){
+        Serial.print(out_packer.data()[i], HEX);
+        Serial.print(".");
+    }
+
+    Serial.println(" ");
 
     wrapped_hello();
     delay(1000);
