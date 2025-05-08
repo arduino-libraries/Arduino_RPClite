@@ -23,7 +23,7 @@ jobs:
       - name: Arduino Lint
         uses: arduino/arduino-lint-action@v2
         with:
-          compliance: specification
+          compliance: strict
           library-manager: submit # remember to change to 'update' after the library is published on the libraries index
           # Always use this setting for official repositories. Remove for 3rd party projects.
           official: true
