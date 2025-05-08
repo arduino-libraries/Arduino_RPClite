@@ -2,8 +2,8 @@
 // Created by lucio on 4/8/25.
 //
 
-#ifndef RPCLITE_H
-#define RPCLITE_H
+#ifndef ARDUINO_RPCLITE_H
+#define ARDUINO_RPCLITE_H
 
 #include "Arduino.h"
 
@@ -16,4 +16,4 @@
 #include "DummyTransport.h"
 #include "SerialTransport.h"
 
-#endif //RPCLITE_H
+#endif //ARDUINO_RPCLITE_H
