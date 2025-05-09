@@ -28,10 +28,22 @@ public:
         int msg_type;
         int msg_id;
         MsgPack::str_t method;
-        if (!unpacker.deserialize(msg_type, msg_id, method)){
+        MsgPack::arr_size_t req_size;
+
+        if (!unpacker.deserialize(req_size, msg_type, msg_id, method)){
             Serial.println("unable to deserialize a msg received");
+
+            for (size_t i=0; i<raw_buffer_fill; i++){
+                Serial.print(raw_buffer[i], HEX);
+                Serial.print(" ");
+            }
+            Serial.println(" ");
+
             flush_buffer();
             return;
+        } else {
+            Serial.print("calling method: ");
+            Serial.println(method);
         }
 
         MsgPack::arr_size_t resp_size(4);
