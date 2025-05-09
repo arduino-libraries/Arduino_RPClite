@@ -1,10 +1,10 @@
 {
-  "name": "RPClite",
+  "name": "Arduino_RPClite",
   "keywords": "rpclib,msgpack,serial",
-  "description": "RPClite for Arduino (based on hideakitai MsgPack)",
+  "description": "A MessagePack RPC library for Arduino",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bcmi-labs/RPClite"
+    "url": "https://github.com/bcmi-labs/Arduino_RPClite"
   },
   "authors": {
     "name": "Lucio Rossi",
