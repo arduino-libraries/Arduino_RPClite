@@ -4,6 +4,8 @@
 #include "error.h"
 #include <stdexcept>
 
+//TODO maybe use arx::function_traits
+
 // C++11-compatible function_traits
 // Primary template: fallback
 template<typename T>
@@ -54,13 +56,19 @@ template<typename F, typename Tuple, std::size_t... I>
 auto invoke_with_tuple(F&& f, Tuple&& t, index_sequence<I...>)
     -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
     return f(std::get<I>(std::forward<Tuple>(t))...);
-}
+};
 
 template<typename F>
 class RpcFunctionWrapper;
 
+class IFunctionWrapper {
+    public:
+        virtual ~IFunctionWrapper() {}
+        virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
+    };
+
 template<typename R, typename... Args>
-class RpcFunctionWrapper<R(Args...)> {
+class RpcFunctionWrapper<R(Args...)>: public IFunctionWrapper {
 public:
     RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
@@ -68,7 +76,7 @@ public:
         return _func(args...);
     }
 
-    bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
+    bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) override {
         auto args = deserialize_all<Args...>(unpacker);
         MsgPack::object::nil_t nil;
 
@@ -117,6 +125,6 @@ template<typename F>
 auto wrap(F&& f) -> RpcFunctionWrapper<typename function_traits<typename std::decay<F>::type>::signature> {
     using Signature = typename function_traits<typename std::decay<F>::type>::signature;
     return RpcFunctionWrapper<Signature>(std::forward<F>(f));
-}
+};
 
 #endif

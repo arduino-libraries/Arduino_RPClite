@@ -13,6 +13,7 @@
 #include "client.h"
 #include "server.h"
 #include "wrapper.h"
+#include "dispatcher.h"
 
 #include "DummyTransport.h"
 #include "SerialTransport.h"
