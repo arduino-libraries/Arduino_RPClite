@@ -1,15 +1,23 @@
 #include <RPClite.h>
 #include <HardwareSerial.h>
 
-HardwareSerial* uart = new HardwareSerial(0);
-
-SerialTransport transport(uart);
+SerialTransport transport(&Serial2);
 RPCServer server(transport);
 
+int add(int a, int b){
+    return a+b;
+}
+
+
 void setup() {
+    Serial2.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
-    Serial.begin(9600);    
+    Serial.begin(9600);
+    while(!Serial);
+
+    server.bind("add", add);
+
 }
 
 void blink_before(){

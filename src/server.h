@@ -8,6 +8,7 @@
 #include "rpc.h"
 #include "error.h"
 #include "wrapper.h"
+#include "dispatcher.h"
 
 class RPCServer {
     ITransport& transport;
@@ -15,30 +16,40 @@ class RPCServer {
 public:
     RPCServer(ITransport& t) : transport(t) {}
 
-    int response_type = 1;
+    template<typename F>
+    void bind(const MsgPack::str_t& name, F&& func){
+        dispatcher.bind(name, func);
+    }
 
     void loop() {
-        MsgPack::Unpacker unpacker;
+
         if (!recv_msg(transport, unpacker)) return;
 
         int msg_type;
         int msg_id;
         MsgPack::str_t method;
-        float a;
-        float b;
+        if (!unpacker.deserialize(msg_type, msg_id, method)){
+            Serial.println("unable to deserialize a msg received");
+            flush_buffer();
+            return;
+        }
 
-        unpacker.deserialize(msg_type, msg_id, method, a, b);
+        MsgPack::arr_size_t resp_size(4);
+        packer.clear();
+        packer.serialize(resp_size, RESP_MSG, msg_id);
 
-        float result = a * b;
+        dispatcher.call(method, unpacker, packer);
 
-        MsgPack::Packer packer;
-
-        MsgPack::object::nil_t null;
-
-        packer.serialize(response_type, msg_id, null, result);
         send_msg(transport, packer.packet());
 
     }
+
+private:
+
+    RpcFunctionDispatcher dispatcher;
+    MsgPack::Unpacker unpacker;
+    MsgPack::Packer packer;
+
 };
 
 #endif //RPCLITE_SERVER_H
