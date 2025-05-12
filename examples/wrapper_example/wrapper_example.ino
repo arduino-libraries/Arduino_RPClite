@@ -97,6 +97,20 @@ void loop() {
 
     Serial.println(" ");
 
-    wrapped_hello();
+    MsgPack::arr_size_t no_param_size(0);
+    packer.clear();
+    packer.serialize(no_param_size);
+    unpacker.clear();
+    unpacker.feed(packer.data(), packer.size());
+    out_packer.clear();
+    wrapped_hello(unpacker, out_packer);
+
+    for (size_t i=0; i<out_packer.size(); i++){
+        Serial.print(out_packer.data()[i], HEX);
+        Serial.print(".");
+    }
+
+    Serial.println(" ");
+
     delay(1000);
 }
