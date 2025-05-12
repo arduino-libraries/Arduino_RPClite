@@ -77,26 +77,50 @@ public:
     }
 
     bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) override {
-        auto args = deserialize_all<Args...>(unpacker);
+
         MsgPack::object::nil_t nil;
 
 #ifdef HANDLE_RPC_ERRORS
     try {
 #endif
+
+        // First check the parameters size
+        if (!unpacker.isArray()){
+            RpcError error(MALFORMED_CALL_ERR, "Unserializable parameters array");
+            packer.serialize(error, nil);
+            return false;
+        }
+
+        MsgPack::arr_size_t param_size;
+
+        unpacker.deserialize(param_size);
+        if (param_size.size() < sizeof...(Args)){
+            RpcError error(MALFORMED_CALL_ERR, "Missing call parameters (WARNING: Default param resolution is not implemented)");
+            packer.serialize(error, nil);
+            return false;
+        }
+
+        if (param_size.size() > sizeof...(Args)){
+            RpcError error(MALFORMED_CALL_ERR, "Too many parameters");
+            packer.serialize(error, nil);
+            return false;
+        }
+
+        auto args = deserialize_all<Args...>(unpacker);
         if constexpr (std::is_void<R>::value){
             invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
             packer.serialize(nil, nil);
             return true;
         } else {
             R out = invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+            Serial.println(out);
             packer.serialize(nil, out);
             return true;
         }
 #ifdef HANDLE_RPC_ERRORS
     } catch (const std::exception& e) {
-        RpcError error;
-        error.code = 0xFE;
-        error.traceback = "RPC error";
+        // Should be specialized according to the exception type
+        RpcError error(GENERIC_ERR, "RPC error");
         packer.serialize(error, nil);
         return false;
     }

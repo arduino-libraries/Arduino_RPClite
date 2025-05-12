@@ -8,6 +8,9 @@ int add(int a, int b){
     return a+b;
 }
 
+MsgPack::str_t greet(){
+    return MsgPack::str_t ("Hello Friend");
+}
 
 void setup() {
     Serial2.begin(115200);
@@ -17,6 +20,7 @@ void setup() {
     while(!Serial);
 
     server.bind("add", add);
+    server.bind("greet", greet);
 
 }
 

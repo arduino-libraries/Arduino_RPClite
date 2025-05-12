@@ -51,7 +51,7 @@ public:
         packer.serialize(resp_size, RESP_MSG, msg_id);
 
         dispatcher.call(method, unpacker, packer);
-
+        flush_buffer();
         send_msg(transport, packer.packet());
 
     }

@@ -46,7 +46,8 @@ void setup() {
 void loop() {
 
     packer.clear();
-    packer.serialize(a, b);
+    MsgPack::arr_size_t param_size(2);
+    packer.serialize(param_size, a, b);
 
     unpacker.clear();
     unpacker.feed(packer.data(), packer.size());
@@ -76,7 +77,7 @@ void loop() {
     float denominator = 0;
 
     packer.clear();
-    packer.serialize(numerator, denominator);
+    packer.serialize(param_size, numerator, denominator);
     unpacker.clear();
     unpacker.feed(packer.data(), packer.size());
     out_packer.clear();
