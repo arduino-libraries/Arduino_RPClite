@@ -19,6 +19,11 @@ struct RpcError {
     int code;
     MsgPack::str_t traceback;
 
+    RpcError() {
+        code = NO_ERR;
+        traceback = "";
+    }
+
     RpcError(int c, const MsgPack::str_t& tb)
         : code(c), traceback(tb) {}
 
