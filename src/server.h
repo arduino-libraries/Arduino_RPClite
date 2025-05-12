@@ -10,6 +10,8 @@
 #include "wrapper.h"
 #include "dispatcher.h"
 
+#define MAX_CALLBACKS   100
+
 class RPCServer {
     ITransport& transport;
 
@@ -58,7 +60,7 @@ public:
 
 private:
 
-    RpcFunctionDispatcher dispatcher;
+    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
     MsgPack::Unpacker unpacker;
     MsgPack::Packer packer;
 

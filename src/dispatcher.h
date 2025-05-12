@@ -5,28 +5,37 @@
 #include "wrapper.h"
 #include "error.h"
 
+struct DispatchEntry {
+    MsgPack::str_t name;
+    IFunctionWrapper* fn;
+};
+
+template<size_t N>
 class RpcFunctionDispatcher {
-    public:
-        template<typename F>
-        void bind(const MsgPack::str_t& name, F&& func) {
-            _functions[name] = std::make_shared<decltype(wrap(std::forward<F>(func)))>(wrap(std::forward<F>(func)));
-        }
-    
-        bool call(const MsgPack::str_t& name, MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
-            auto it = _functions.find(name);
-            if (it != _functions.end()) {
-                return (*(it->second))(unpacker, packer);
+public:
+    template<typename F>
+    void bind(MsgPack::str_t name, F&& f) {
+        //assert(_count < N);
+        static auto wrapper = wrap(std::forward<F>(f));
+        _entries[_count++] = {name, &wrapper};
+    }
+
+    bool call(MsgPack::str_t name, MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
+        for (size_t i = 0; i < _count; ++i) {
+            if (_entries[i].name == name) {
+                return (*_entries[i].fn)(unpacker, packer);
             }
-
-            RpcError not_found(FUNCTION_NOT_FOUND_ERR, name);
-            MsgPack::object::nil_t nil;
-            packer.serialize(not_found, nil);
-
-            return false;
         }
-    
-    private:
-        std::map<MsgPack::str_t, std::shared_ptr<IFunctionWrapper>> _functions;
-    };
+
+        // handle not found
+        MsgPack::object::nil_t nil;
+        packer.serialize(RpcError(FUNCTION_NOT_FOUND_ERR, name), nil);
+        return false;
+    }
+
+private:
+    DispatchEntry _entries[N];
+    size_t _count = 0;
+};
 
 #endif

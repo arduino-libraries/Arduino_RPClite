@@ -2,7 +2,10 @@
 #define RPCLITE_WRAPPER_H
 
 #include "error.h"
+
+#ifdef HANDLE_RPC_ERRORS
 #include <stdexcept>
+#endif
 
 //TODO maybe use arx::function_traits
 
