@@ -39,24 +39,9 @@ struct function_traits {
 };
 
 
-// C++11-compatible index_sequence
-template<std::size_t... Is>
-struct index_sequence { };
-
-template<std::size_t N, std::size_t... Is>
-struct make_index_sequence_impl : make_index_sequence_impl<N - 1, N - 1, Is...> { };
-
-template<std::size_t... Is>
-struct make_index_sequence_impl<0, Is...> {
-    typedef index_sequence<Is...> type;
-};
-
-template<std::size_t N>
-using make_index_sequence = typename make_index_sequence_impl<N>::type;
-
 // Helper to invoke a function with a tuple of arguments
 template<typename F, typename Tuple, std::size_t... I>
-auto invoke_with_tuple(F&& f, Tuple&& t, index_sequence<I...>)
+auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
     -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
     return f(std::get<I>(std::forward<Tuple>(t))...);
 };
@@ -111,11 +96,11 @@ public:
 
         auto args = deserialize_all<Args...>(unpacker);
         if constexpr (std::is_void<R>::value){
-            invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+            invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
             packer.serialize(nil, nil);
             return true;
         } else {
-            R out = invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
+            R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
             Serial.println(out);
             packer.serialize(nil, out);
             return true;
