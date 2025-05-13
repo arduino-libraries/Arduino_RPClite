@@ -19,6 +19,22 @@
 uint8_t raw_buffer[MAX_BUFFER_SIZE] = {0};
 size_t raw_buffer_fill = 0;
 
+
+#ifdef DEBUG
+
+void print_raw_buf(){
+
+    Serial.print("RPC buffer content");
+    for (size_t i=0; i<raw_buffer_fill; i++) {
+        Serial.print(raw_buffer[i]);
+        Serial.print(" ");
+    }
+    Serial.println(" ");
+
+}
+
+#endif
+
 inline void flush_buffer(){
     raw_buffer_fill = 0;
 }

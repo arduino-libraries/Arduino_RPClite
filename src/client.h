@@ -71,7 +71,7 @@ public:
             MsgPack::arr_size_t resp_size;
 
             if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
-                Serial.println("malformed response");
+                Serial.println("incomplete or malformed response");
                 continue;
             };
 

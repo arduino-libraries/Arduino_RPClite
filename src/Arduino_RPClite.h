@@ -8,6 +8,7 @@
 #include "Arduino.h"
 
 //#define HANDLE_RPC_ERRORS
+//#define DEBUG
 #include "rpc.h"
 #include "transport.h"
 #include "client.h"
