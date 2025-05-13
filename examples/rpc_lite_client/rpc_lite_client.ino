@@ -30,6 +30,10 @@ void loop() {
     float result;
     blink_before();
     
+    String str_res;
+    bool ko = client.call("loopback", str_res, "Sending a greeting");
+    Serial.println(str_res);
+
     bool ok = client.call("mult", result, 2.0, 3.0);
 
     if (ok) {

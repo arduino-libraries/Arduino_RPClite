@@ -12,6 +12,10 @@ MsgPack::str_t greet(){
     return MsgPack::str_t ("Hello Friend");
 }
 
+MsgPack::str_t loopback(MsgPack::str_t message){
+    return message;
+}
+
 void setup() {
     Serial2.begin(115200);
     transport.begin();

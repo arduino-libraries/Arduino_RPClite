@@ -12,7 +12,7 @@ MsgPack::Unpacker unpacker;
 
 MsgPack::Packer out_packer;
 
-RpcFunctionDispatcher dispatcher;
+RpcFunctionDispatcher<100> dispatcher;
 
 void blink_before(){
     digitalWrite(LED_BUILTIN, HIGH);

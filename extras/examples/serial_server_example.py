@@ -7,6 +7,9 @@ def add(a, b):
 def greet(name):
     return f"Hello, {name}!"
 
+def loopback(message):
+    return message
+
 def multiply(a, b):
     return a*b
 
@@ -42,6 +45,7 @@ server.register_callback('divi', divide)
 server.register_callback('greet', greet)
 server.register_callback('blink', blink)
 server.register_callback('get_rand', get_rand)
+server.register_callback('loopback', loopback)
 
 server.start()
 
