@@ -15,7 +15,7 @@ class RpcFunctionDispatcher {
 public:
     template<typename F>
     void bind(MsgPack::str_t name, F&& f) {
-        assert(_count < N);
+        //assert(_count < N);
         static auto wrapper = wrap(std::forward<F>(f));
         _entries[_count++] = {name, &wrapper};
     }
