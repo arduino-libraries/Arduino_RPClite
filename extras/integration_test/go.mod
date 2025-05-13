@@ -1,4 +1,4 @@
-module RpcClientZeroTest
+module ArduinoRPCliteTestSuite
 
 go 1.24.2
 
