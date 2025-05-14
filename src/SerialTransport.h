@@ -16,6 +16,10 @@ class SerialTransport: public ITransport {
 
         void begin(){}
 
+        bool available() override {
+            return _stream->available();
+        }
+
         size_t write(const uint8_t* data, size_t size) override {
 
             for (size_t i=0; i<size; i++){

@@ -15,6 +15,7 @@
 #include "server.h"
 #include "wrapper.h"
 #include "dispatcher.h"
+#include "decoder.h"
 
 #include "DummyTransport.h"
 #include "SerialTransport.h"
