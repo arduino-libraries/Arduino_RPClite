@@ -19,7 +19,7 @@ public:
 
 
     void process(){
-        if (advance()) return parse_packet();
+        if (advance()) parse_packet();
     }
 
     // Fill the raw buffer to its capacity
@@ -78,13 +78,13 @@ public:
                 if (unpacker.size() < min_packet_indices) return false;
                 int type;
                 if (unpacker.deserialize(type)) {
-                    if (type == 0 || type == 1) {   // request or response
+                    if (type == CALL_MSG || type == RESP_MSG) {   // request or response
                         int _id;
                         MsgPack::str_t callback;
                         MsgPack::arr_size_t param_size;
                         unpacker.deserialize(_id, callback, param_size);
                         return (unpacker.size() == min_packet_indices + param_size.size());
-                    } else if (type == 2) { // notification
+                    } else if (type == NOTIFY_MSG) { // notification
                         MsgPack::str_t callback;
                         MsgPack::arr_size_t param_size;
                         unpacker.deserialize(callback, param_size);
