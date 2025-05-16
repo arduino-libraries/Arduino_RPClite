@@ -43,28 +43,67 @@ public:
     }
 
     // Tries to parse the first packet only
-    void parse_packet(){
+    size_t parse_packet(){
 
         // Nop in case 1st packet is ready... waiting to deliver
-        if (_packet_ready){return;}
+        if (_packet_ready){return _packet_size;}
 
-        size_t bytes_checked = 0;
+        size_t bytes_checked = 3;
 
-        MsgPack::Unpacker unpacker;
         while (bytes_checked < _bytes_stored) {
-            if (unpacker.feed(_raw_buffer, bytes_checked)) {
+            bytes_checked++;
+
+            if (is_packet_complete(bytes_checked)) {
                 _packet_ready = true;
-                _packet_size = bytes_checked + 1;
-                return;
-            } else {
-                bytes_checked++;
+                _packet_size = bytes_checked;
+                break;
             }
         }
+
+        return _packet_size;
+
+    }
+
+    bool is_packet_complete(size_t size) {
+
+        static MsgPack::Unpacker unpacker;
+        unpacker.clear();
+
+        if (unpacker.feed(_raw_buffer, size)){
+            size_t min_packet_indices;
+
+            MsgPack::arr_size_t elem_size;
+            if (unpacker.deserialize(elem_size)){
+                min_packet_indices = elem_size.size() + 1;
+                if (unpacker.size() < min_packet_indices) return false;
+                int type;
+                if (unpacker.deserialize(type)) {
+                    if (type == 0 || type == 1) {   // request or response
+                        int _id;
+                        MsgPack::str_t callback;
+                        MsgPack::arr_size_t param_size;
+                        unpacker.deserialize(_id, callback, param_size);
+                        return (unpacker.size() == min_packet_indices + param_size.size());
+                    } else if (type == 2) { // notification
+                        MsgPack::str_t callback;
+                        MsgPack::arr_size_t param_size;
+                        unpacker.deserialize(callback, param_size);
+                        return (unpacker.size() == min_packet_indices + param_size.size());
+                    }
+                }
+
+            }
+
+        }
+
+        return false;
 
     }
 
     // Check if a packet is available
     bool packet_available() const { return _packet_ready; }
+
+    size_t packet_size() const {return _packet_size;}
 
     // Get the oldest packet (returns false if no packet available)
     bool get_next_packet(MsgPack::Unpacker& unpacker) {
@@ -99,6 +138,21 @@ public:
         
         return _packet_size;
     }
+
+#ifdef DEBUG
+void print_buffer(){
+
+    Serial.print("buf size: ");
+    Serial.print(_bytes_stored);
+    Serial.print(" : ");
+
+    for (size_t i = 0; i < _bytes_stored; i++) {
+        Serial.print(_raw_buffer[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println();
+}
+#endif
 
 private:
     ITransport& _transport;

@@ -1,3 +1,4 @@
+#define DEBUG
 #include <Arduino_RPClite.h>
 
 void blink_before(){
@@ -27,16 +28,29 @@ void loop() {
     blink_before();
     MsgPack::arr_size_t req_sz(4);
     MsgPack::arr_size_t par_sz(2);
+    packer.clear();
     packer.serialize(req_sz, 0, 1, "method", par_sz, 1.0, 2.0);
 
     DummyTransport dummy_transport(packer.data(), packer.size());
     RpcDecoder<> decoder(dummy_transport);
 
     while (!decoder.packet_available()){
+        decoder.print_buffer();
         Serial.println("Packet not ready");
         decoder.advance();
+        uint8_t decoded = decoder.parse_packet();
+        if (decoded > 0){
+            Serial.print("Bytes decoded: ");
+            Serial.println(decoded);
+        }
+        decoder.print_buffer();
+        delay(100);
     }
 
-    Serial.println("packet ready");
+    if (decoder.packet_available()){
+        Serial.print("packet ready. size: ");
+        Serial.println(decoder.packet_size());
+    }
+
 
 }
