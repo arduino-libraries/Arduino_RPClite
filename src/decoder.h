@@ -49,7 +49,7 @@ public:
 
         static MsgPack::Unpacker unpacker;
         unpacker.clear();
-        unpacker.feed(_raw_buffer, _bytes_stored);
+        unpacker.feed(_raw_buffer, 2);
 
         MsgPack::arr_size_t elem_size;
         int type;
@@ -94,9 +94,11 @@ public:
 
         _bytes_stored = remaining_bytes;
         _packet_type = NO_MSG;
-        
+
         return size;
     }
+
+    inline size_t size() const {return _bytes_stored;}
 
 #ifdef DEBUG
 void print_buffer(){
