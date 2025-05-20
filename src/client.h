@@ -4,106 +4,44 @@
 
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
-#include "rpc.h"
 #include "error.h"
+#include "decoder_manager.h"
 
 class RPCClient {
     ITransport& transport;
-    int msg_id = 1;
+    RpcDecoder<>& decoder;
 
 public:
-    RPCClient(ITransport& t) : transport(t) {}
+    RPCClient(ITransport& t) : transport(t), decoder(RpcDecoderManager<>::getDecoder(t)) {}
 
     template<typename... Args>
     void notify(const MsgPack::str_t method, Args&&... args)  {
-        MsgPack::Packer packer;
-
-        int msg_type = NOTIFY_MSG;
-
-        MsgPack::arr_size_t notify_size(3);
-
-        packer.serialize(notify_size, msg_type, method);
-
-        MsgPack::arr_size_t arg_size(sizeof...(args));
-
-        packer.serialize(arg_size, std::forward<Args>(args)...);
-
-        send_msg(transport, packer.packet());
+        int _id;
+        decoder.send_call(NOTIFY_MSG, method, _id, std::forward<Args>(args)...);
     }
 
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
 
-        MsgPack::Packer packer;
-
-        int msg_type = CALL_MSG;
-
-        MsgPack::arr_size_t call_size(4);
-
-        packer.serialize(call_size, msg_type, msg_id, method);
-
-        MsgPack::arr_size_t arg_size(sizeof...(args));
-
-        packer.serialize(arg_size, std::forward<Args>(args)...);
-
-        send_msg(transport, packer.packet());
-
-        MsgPack::Unpacker unpacker;
-
-        // blocking call
-
-        while (true){
-            if (!recv_msg(transport, unpacker)){
-                // If not receiving new bytes yield first then attempt a new deserialization
-                delay(1);
-            }
-
-            if (is_empty_buffer()){
-                //Serial.println("Empty buffer... waiting response");
-                continue;
-            }
-
-            int r_msg_type;
-            int r_msg_id;
-            MsgPack::object::nil_t nil;
-            RpcError rpc_error;
-
-            MsgPack::arr_size_t resp_size;
-
-            if (!unpacker.deserialize(resp_size, r_msg_type, r_msg_id)){
-                Serial.println("incomplete or malformed response");
-                continue;
-            };
-
-            if ((resp_size.size() != 4) || (r_msg_type != 1) || (r_msg_id != msg_id)){
-                Serial.println("wrong msg received");
-                continue;
-            }
-
-            if (!unpacker.unpackable(nil)){
-                Serial.print("RPC error - ");
-                if (!unpacker.deserialize(rpc_error, nil)){
-                    Serial.println("wrong error msg received");
-                    continue;
-                }
-                Serial.print(" error code: ");
-                Serial.print(rpc_error.code);
-                Serial.print(" error str: ");
-                Serial.println(rpc_error.traceback);
-                msg_id += 1;
-                flush_buffer();
-                return false;
-            } else if (!unpacker.deserialize(nil, result)){
-                Serial.println("Unexpected result");
-                continue;
-            }
-            break;
+        int msg_id;
+        if (!decoder.send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)){
         }
 
-        msg_id += 1;
+        RpcError error;
+        // blocking call
+        while (!decoder.get_response(msg_id, result, error)){
+            decoder.process();
+            delay(1);
+        }
 
-        flush_buffer();
-        return true;
+#ifdef DEBUG
+        if (error.code != NO_ERR){
+            Serial.print("Server-side error message: ");
+            Serial.println(error.traceback);
+        }
+#endif
+
+        return (error.code == NO_ERR);
 
     }
 };

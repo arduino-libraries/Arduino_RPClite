@@ -6,9 +6,6 @@
 
 #include "MsgPack.h"
 
-#include "MsgPack.h"
-
-
 #define NO_ERR                   0x00
 #define MALFORMED_CALL_ERR       0xFD
 #define FUNCTION_NOT_FOUND_ERR   0xFE
