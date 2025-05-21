@@ -12,6 +12,7 @@
 template<size_t MaxTransports = RPCLITE_MAX_TRANSPORTS>
 class RpcDecoderManager {
 public:
+    // todo parametrize so the RpcDecoder returned has a user defined buffer size ?
     static RpcDecoder<>& getDecoder(ITransport& transport) {
         for (auto& entry : decoders_) {
             if (entry.transport == &transport) {

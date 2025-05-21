@@ -94,7 +94,10 @@ public:
             return false;
         }
 
-        auto args = deserialize_all<Args...>(unpacker);
+        //unpacker not ready if deserialization fails at this point
+        std::tuple<Args...> args;
+        if (!deserialize_all<Args...>(unpacker, args)) return false;
+
         if constexpr (std::is_void<R>::value){
             invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
             packer.serialize(nil, nil);
@@ -119,16 +122,31 @@ public:
 private:
     std::function<R(Args...)> _func;
 
+    template<size_t I = 0, typename... Ts>
+    inline typename std::enable_if<I == sizeof...(Ts), bool>::type
+    deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
+        return true; // Base case
+    }
+
+    template<size_t I = 0, typename... Ts>
+    inline typename std::enable_if<I < sizeof...(Ts), bool>::type
+    deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
+        if (!deserialize_single(unpacker, std::get<I>(out))) {
+            return false;
+        }
+        return deserialize_tuple<I+1>(unpacker, out); // Recursive unpacking
+    }
+
     template<typename... Ts>
-    std::tuple<Ts...> deserialize_all(MsgPack::Unpacker& unpacker) {
-        return std::make_tuple(deserialize_single<Ts>(unpacker)...);
+    bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
+        return deserialize_tuple(unpacker, values);
     }
 
     template<typename T>
-    static T deserialize_single(MsgPack::Unpacker& unpacker) {
-        T value;
+    static bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
+        if (!unpacker.unpackable(value)) return false;
         unpacker.deserialize(value);
-        return value;
+        return true;
     }
 };
 

@@ -1,7 +1,6 @@
 #include <Arduino_RPClite.h>
-#include <HardwareSerial.h>
 
-SerialTransport transport(&Serial2);
+SerialTransport transport(&Serial0);
 RPCServer server(transport);
 
 int add(int a, int b){
@@ -17,7 +16,7 @@ MsgPack::str_t loopback(MsgPack::str_t message){
 }
 
 void setup() {
-    Serial2.begin(115200);
+    Serial0.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
@@ -37,5 +36,5 @@ void blink_before(){
 
 void loop() {
     blink_before();
-    server.loop();
+    server.run();
 }

@@ -1,7 +1,9 @@
 #ifndef RPCLITE_DECODER_H
 #define RPCLITE_DECODER_H
-#include "transport.h"
+
 #include "MsgPack.h"
+#include "transport.h"
+#include "dispatcher.h"
 
 
 #define NO_MSG          -1
@@ -113,6 +115,74 @@ public:
 
     }
 
+    template<size_t N>
+    void process_requests(RpcFunctionDispatcher<N>& dispatcher) {
+        if (_packet_type!=CALL_MSG && _packet_type!=NOTIFY_MSG) return;
+
+        static MsgPack::Unpacker unpacker;
+        static MsgPack::Packer packer;
+
+        size_t bytes_checked = 0;
+
+        while (bytes_checked < _bytes_stored) {
+            bytes_checked++;
+            unpacker.clear();
+            if (!unpacker.feed(_raw_buffer, bytes_checked)) continue;
+
+            int msg_type;
+            int msg_id;
+            MsgPack::str_t method;
+            MsgPack::arr_size_t req_size;
+
+            if (!unpacker.deserialize(req_size, msg_type)) break;
+            // todo HANDLE MALFORMED CLIENT REQ ERRORS
+            if ((req_size.size() == REQUEST_SIZE) && (msg_type == CALL_MSG)){
+                if (!unpacker.deserialize(msg_id, method)) {
+                    discard_packet();
+                    break;
+                }
+            } else if ((req_size.size() == NOTIFY_SIZE) && (msg_type == NOTIFY_MSG)) {
+                if (!unpacker.deserialize(method)) {
+                    discard_packet();
+                    break;
+                }
+            } else if ((req_size.size() == RESPONSE_SIZE) && (msg_type == RESP_MSG)) {   // this should never happen
+                break;
+            } else {
+                discard_packet();
+                break;
+            }
+
+            MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
+            packer.clear();
+            packer.serialize(resp_size, RESP_MSG, msg_id);
+            size_t headers_size = packer.size();
+
+            if (!dispatcher.call(method, unpacker, packer)) {
+                if (packer.size()==headers_size) {
+                    // Call didn't go through bc parameters are not ready yet
+                    continue;
+                } else {
+                    // something went wrong the call raised an error or the client issued a malformed request
+                    if (msg_type == CALL_MSG) {
+                        send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+                    }   // if notification client will never know something went wrong
+                    discard_packet();   // agnostic pop
+                    break;
+                }
+            } else {
+                // all is well we can respond and pop the deserialized packet
+                if (msg_type == CALL_MSG){
+                    send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+                }
+                pop_packet(bytes_checked);
+                break;
+            }
+
+        }
+
+    }
+
     void process(){
         if (advance()) parse_packet();
     }
@@ -190,6 +260,13 @@ public:
         _packet_type = NO_MSG;
 
         return size;
+    }
+
+    size_t discard_packet() {
+        // todo recursive packet size measurement
+        // use pop_packet with size
+        // return popped bytes
+        return 0;
     }
 
     inline size_t size() const {return _bytes_stored;}
