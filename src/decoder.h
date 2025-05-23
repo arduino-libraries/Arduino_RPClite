@@ -44,15 +44,6 @@ public:
         MsgPack::arr_size_t arg_size(sizeof...(args));
         packer.serialize(arg_size, std::forward<Args>(args)...);
 
-#ifdef DEBUG
-        Serial.print("Sending: ");
-        for (size_t i=0; i<packer.size(); i++){
-            Serial.print(packer.data()[i], HEX);
-            Serial.print(" ");
-        }
-        Serial.println(" ");
-#endif
-
         if (send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size()){
             _msg_id++;
             return true;
@@ -134,28 +125,25 @@ public:
             MsgPack::str_t method;
             MsgPack::arr_size_t req_size;
 
-            if (!unpacker.deserialize(req_size, msg_type)) break;
+            if (!unpacker.deserialize(req_size, msg_type)) continue;
             // todo HANDLE MALFORMED CLIENT REQ ERRORS
             if ((req_size.size() == REQUEST_SIZE) && (msg_type == CALL_MSG)){
-                if (!unpacker.deserialize(msg_id, method)) {
-                    discard_packet();
-                    break;
-                }
+                if (!unpacker.deserialize(msg_id, method)) continue;
+                if (unpacker.size() < REQUEST_SIZE + 1) continue;                       // there must be at least 5 indices
             } else if ((req_size.size() == NOTIFY_SIZE) && (msg_type == NOTIFY_MSG)) {
-                if (!unpacker.deserialize(method)) {
-                    discard_packet();
-                    break;
-                }
-            } else if ((req_size.size() == RESPONSE_SIZE) && (msg_type == RESP_MSG)) {   // this should never happen
+                if (!unpacker.deserialize(method)) continue;
+                if (unpacker.size() < NOTIFY_SIZE + 1) continue;                        // there must be at least 4 indices
+            } else if ((req_size.size() == RESPONSE_SIZE) && (msg_type == RESP_MSG)) {  // this should never happen but it's addressed to a client
                 break;
             } else {
                 discard_packet();
                 break;
             }
+            // Headers unpacked
 
             MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
             packer.clear();
-            packer.serialize(resp_size, RESP_MSG, msg_id);
+            if (msg_type == CALL_MSG) packer.serialize(resp_size, RESP_MSG, msg_id);
             size_t headers_size = packer.size();
 
             if (!dispatcher.call(method, unpacker, packer)) {

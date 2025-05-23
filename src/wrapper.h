@@ -104,7 +104,6 @@ public:
             return true;
         } else {
             R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
-            Serial.println(out);
             packer.serialize(nil, out);
             return true;
         }

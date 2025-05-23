@@ -23,3 +23,7 @@ class SerialClient:
         unpacker = msgpack.Unpacker(BytesIO(data))
         for message in unpacker:
             print(message)
+
+    def notify(self, method, *args):
+        request = [NOTIFY, method, [*args]]
+        self.ser.write(msgpack.packb(request))
