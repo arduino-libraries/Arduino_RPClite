@@ -35,16 +35,19 @@ func TestRPCClient(t *testing.T) {
 		debugSer.Close()
 	}()
 
+	msgID := 0
+
 	// 1: Receive an RPC call to the "mult" method with 2 arguments
 	// and send back the result
 	t.Run("RPCClientCallFloatArgs", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
 		require.NoError(t, err)
-		require.Equal(t, []any{int8(0), int8(1), "mult", []any{2.0, 3.0}}, arr)
-		err = out.Encode([]any{1, 1, nil, 6.0})
+		require.Equal(t, []any{int8(0), int8(msgID), "mult", []any{2.0, 3.0}}, arr)
+		err = out.Encode([]any{1, msgID, nil, 6.0})
 		require.NoError(t, err)
 		expectDebug("mult(2.0, 3.0)\r\n")
 		expectDebug("-> 6.00\r\n")
+		msgID++
 	})
 
 	// 2: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
@@ -52,11 +55,12 @@ func TestRPCClient(t *testing.T) {
 	t.Run("RPCClientCallFloatArgsError", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
 		require.NoError(t, err)
-		require.Equal(t, []any{int8(0), int8(2), "mult", []any{2.0}}, arr)
-		err = out.Encode([]any{1, 2, []any{1, "missing parameter"}, nil})
+		require.Equal(t, []any{int8(0), int8(msgID), "mult", []any{2.0}}, arr)
+		err = out.Encode([]any{1, msgID, []any{1, "missing parameter"}, nil})
 		require.NoError(t, err)
 		expectDebug("mult(2.0)\r\n")
 		expectDebug("-> error\r\n")
+		msgID++
 	})
 
 	// 3, 4: Receive an RPC call to the "or" method with 1 or 2 arguments
@@ -64,19 +68,21 @@ func TestRPCClient(t *testing.T) {
 	t.Run("RPCClientCallBoolArgs", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
 		require.NoError(t, err)
-		require.Equal(t, []any{int8(0), int8(3), "or", []any{true, false}}, arr)
-		err = out.Encode([]any{1, 3, nil, true})
+		require.Equal(t, []any{int8(0), int8(msgID), "or", []any{true, false}}, arr)
+		err = out.Encode([]any{1, msgID, nil, true})
 		require.NoError(t, err)
 		expectDebug("or(true, false)\r\n")
 		expectDebug("-> true\r\n")
+		msgID++
 
 		arr, err = in.DecodeSlice()
 		require.NoError(t, err)
-		require.Equal(t, []any{int8(0), int8(4), "or", []any{false}}, arr)
-		err = out.Encode([]any{1, 4, nil, false})
+		require.Equal(t, []any{int8(0), int8(msgID), "or", []any{false}}, arr)
+		err = out.Encode([]any{1, msgID, nil, false})
 		require.NoError(t, err)
 		expectDebug("or(false)\r\n")
 		expectDebug("-> false\r\n")
+		msgID++
 	})
 
 	// 5: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
@@ -84,11 +90,12 @@ func TestRPCClient(t *testing.T) {
 	t.Run("RPCClientCallFloatArgsErrorWithLongString", func(t *testing.T) {
 		arr, err := in.DecodeSlice()
 		require.NoError(t, err)
-		require.Equal(t, []any{int8(0), int8(5), "mult", []any{2.0}}, arr)
-		err = out.Encode([]any{1, 5, []any{2, "method get_led_state not available"}, nil})
+		require.Equal(t, []any{int8(0), int8(msgID), "mult", []any{2.0}}, arr)
+		err = out.Encode([]any{1, msgID, []any{2, "method get_led_state not available"}, nil})
 		require.NoError(t, err)
 		expectDebug("mult(2.0)\r\n")
 		expectDebug("-> error\r\n")
+		msgID++
 	})
 
 	// RPC: Receive an RPC call to the "mult" method with 1 argument (wrong number of arguments)
