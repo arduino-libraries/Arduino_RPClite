@@ -10,6 +10,7 @@ class DummyTransport: public ITransport {
 
     const uint8_t* _dummy_buf;
     size_t _dummy_buf_size = 0;
+    size_t r_size = 0;
 
     public:
 
@@ -27,18 +28,16 @@ class DummyTransport: public ITransport {
         }
 
         size_t read(uint8_t* buffer, size_t size) override {
-            if (_dummy_buf_size == 0) return 0;
 
-            size_t r_size = 0;
-            for (size_t i = 0; i < _dummy_buf_size; i++){
-                buffer[r_size] = _dummy_buf[i];
+            size_t i;
+            for (i = 0; i < size; i++){
+                if ((r_size + i) == _dummy_buf_size) break;
+                buffer[i] = _dummy_buf[r_size + i];
                 delay(1);
-                r_size++;
-                if (r_size == size) break;
             }
 
-            _dummy_buf_size = _dummy_buf_size - r_size;
-            return r_size;
+            r_size = r_size + i;
+            return i;
 
         }
 
