@@ -259,15 +259,15 @@ public:
 #ifdef DEBUG
 void print_buffer(){
 
-    Serial.print("buf size: ");
-    Serial.print(_bytes_stored);
-    Serial.print(" : ");
+    //Serial.print("buf size: ");
+    //Serial.print(_bytes_stored);
+    //Serial.print(" : ");
 
     for (size_t i = 0; i < _bytes_stored; i++) {
-        Serial.print(_raw_buffer[i], HEX);
-        Serial.print(" ");
+        //Serial.print(_raw_buffer[i], HEX);
+        //Serial.print(" ");
     }
-    Serial.println();
+    //Serial.println();
 }
 #endif
 

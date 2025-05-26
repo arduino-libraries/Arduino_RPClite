@@ -36,8 +36,8 @@ public:
 
 #ifdef DEBUG
         if (error.code != NO_ERR){
-            Serial.print("Server-side error message: ");
-            Serial.println(error.traceback);
+            //Serial.print("Server-side error message: ");
+            //Serial.println(error.traceback);
         }
 #endif
 
