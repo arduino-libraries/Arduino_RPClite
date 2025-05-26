@@ -99,10 +99,15 @@ void loop() {
     }
 
     // MIXED INCOMING RESPONSE AND REQUEST
+    Serial.println("-- Discard TEST --");
     blink_before();
     packer.clear();
     packer.serialize(resp_sz, 1, 1, nil, ret_sz, 3.0, 2);
+    Serial.print("1st packet size: ");
+    Serial.println(packer.size());
     packer.serialize(req_sz, 0, 1, "method", par_sz, 1.0, 2.0);
+    Serial.print("full size: ");
+    Serial.println(packer.size());
 
     DummyTransport dummy_transport4(packer.data(), packer.size());
     RpcDecoder<> decoder4(dummy_transport4);
@@ -112,53 +117,19 @@ void loop() {
         Serial.println("Packet not ready");
         decoder4.advance();
         decoder4.parse_packet();
-        decoder4.print_buffer();
         delay(100);
     }
 
-    if (decoder4.packet_incoming()){
-        Serial.print("packet ready. type: ");
-        Serial.println(decoder4.packet_type());
-
-        // as client knows the expected response types/error
-        MsgPack::arr_size_t r_resp_sz(4);
-        MsgPack::object::nil_t nil;
-        int r_type;
-        int r_msg_id;
-        MsgPack::arr_size_t r_ret_sz(2);
-        float r_float;
-        int r_int;
-
-        Serial.print("Total Decoder buf size: ");
-        Serial.println(decoder4.size());
-        for (size_t i=1; i<decoder4.size(); i++){
-
-            if (decoder4.get_next_packet(unpacker, i)){
-
-                if (unpacker.deserialize(r_resp_sz, r_type, r_msg_id)){
-                    // consistency checks
-                    if (unpacker.unpackable(nil)) { // No error case
-                        if (unpacker.deserialize(nil, r_ret_sz, r_float, r_int)){
-                            // do more checks
-                            // fill the response
-                            Serial.print("Full packet decoded size: ");
-                            Serial.println(i);
-                            decoder4.pop_packet(i);
-                            Serial.print("1st Packet popped. Decoder buf size: ");
-                            Serial.println(decoder4.size());
-                            decoder4.print_buffer();
-                            break;  //exit the loop
-                        }
-                    } else {
-                        // unpack the error
-                    }
-                    
-                }
-
-            }
-
-        }
-
+    while (decoder4.packet_incoming()){
+        decoder4.print_buffer();
+        size_t removed = decoder4.discard_packet();
+        Serial.print("Removed bytes: ");
+        Serial.println(removed);
+        decoder4.print_buffer();
+        decoder4.advance();
+        decoder4.parse_packet();
     }
+
+    Serial.println("-- END Discard TEST --");
 
 }
