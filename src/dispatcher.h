@@ -14,10 +14,11 @@ template<size_t N>
 class RpcFunctionDispatcher {
 public:
     template<typename F>
-    void bind(MsgPack::str_t name, F&& f) {
-        //assert(_count < N);
+    bool bind(MsgPack::str_t name, F&& f) {
+        if (_count >= N) return false;
         static auto wrapper = wrap(std::forward<F>(f));
         _entries[_count++] = {name, &wrapper};
+        return true;
     }
 
     bool call(MsgPack::str_t name, MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {

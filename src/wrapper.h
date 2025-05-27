@@ -98,15 +98,8 @@ public:
         std::tuple<Args...> args;
         if (!deserialize_all<Args...>(unpacker, args)) return false;
 
-        if constexpr (std::is_void<R>::value){
-            invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
-            packer.serialize(nil, nil);
-            return true;
-        } else {
-            R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
-            packer.serialize(nil, out);
-            return true;
-        }
+        return handle_call(args, packer);
+
 #ifdef HANDLE_RPC_ERRORS
     } catch (const std::exception& e) {
         // Should be specialized according to the exception type
@@ -121,10 +114,30 @@ public:
 private:
     std::function<R(Args...)> _func;
 
+    template<typename Dummy = R>
+    typename std::enable_if<std::is_void<Dummy>::value, bool>::type
+    handle_call(auto&& args, auto&& packer) {
+        MsgPack::object::nil_t nil;
+        invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        packer.serialize(nil, nil);
+        return true;
+    }
+
+    template<typename Dummy = R>
+    typename std::enable_if<!std::is_void<Dummy>::value, bool>::type
+    handle_call(auto&& args, auto&& packer) {
+        MsgPack::object::nil_t nil;
+        R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        packer.serialize(nil, out);
+        return true;
+    }
+
     template<size_t I = 0, typename... Ts>
     inline typename std::enable_if<I == sizeof...(Ts), bool>::type
     deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
-        return true; // Base case
+        (void)unpacker;    // silence unused parameter warning
+        (void)out;
+        return true;        // Base case
     }
 
     template<size_t I = 0, typename... Ts>

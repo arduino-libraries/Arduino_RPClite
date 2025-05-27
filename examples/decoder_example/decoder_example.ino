@@ -19,6 +19,18 @@ void blink_before(){
 MsgPack::Packer packer;
 MsgPack::Unpacker unpacker;
 
+void print_buf() {
+    Serial.print("buf size: ");
+    Serial.print(packer.size());
+    Serial.print(" - ");
+
+    for (size_t i=0; i<packer.size(); i++){
+        Serial.print(packer.data()[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println(" ");
+}
+
 void setup() {
     Serial.begin(9600);
 }
@@ -34,16 +46,15 @@ void loop() {
     // REQUEST
     packer.clear();
     packer.serialize(req_sz, 0, 1, "method", par_sz, 1.0, 2.0);
+    print_buf();
 
     DummyTransport dummy_transport(packer.data(), packer.size());
     RpcDecoder<> decoder(dummy_transport);
 
     while (!decoder.packet_incoming()){
-        decoder.print_buffer();
         Serial.println("Packet not ready");
         decoder.advance();
         decoder.parse_packet();
-        decoder.print_buffer();
         delay(100);
     }
 
@@ -56,16 +67,15 @@ void loop() {
     blink_before();
     packer.clear();
     packer.serialize(notify_sz, 2, "method", par_sz, 1.0, 2.0);
+    print_buf();
 
     DummyTransport dummy_transport2(packer.data(), packer.size());
     RpcDecoder<> decoder2(dummy_transport2);
 
     while (!decoder2.packet_incoming()){
-        decoder2.print_buffer();
         Serial.println("Packet not ready");
         decoder2.advance();
         decoder2.parse_packet();
-        decoder2.print_buffer();
         delay(100);
     }
 
@@ -80,16 +90,15 @@ void loop() {
     MsgPack::object::nil_t nil;
     MsgPack::arr_size_t ret_sz(2);
     packer.serialize(resp_sz, 1, 1, nil, ret_sz, 3.0, 2);
+    print_buf();
 
     DummyTransport dummy_transport3(packer.data(), packer.size());
     RpcDecoder<> decoder3(dummy_transport3);
 
     while (!decoder3.packet_incoming()){
-        decoder3.print_buffer();
         Serial.println("Packet not ready");
         decoder3.advance();
         decoder3.parse_packet();
-        decoder3.print_buffer();
         delay(100);
     }
 
@@ -108,12 +117,12 @@ void loop() {
     packer.serialize(req_sz, 0, 1, "method", par_sz, 1.0, 2.0);
     Serial.print("full size: ");
     Serial.println(packer.size());
+    print_buf();
 
     DummyTransport dummy_transport4(packer.data(), packer.size());
     RpcDecoder<> decoder4(dummy_transport4);
 
     while (!decoder4.packet_incoming()){
-        decoder4.print_buffer();
         Serial.println("Packet not ready");
         decoder4.advance();
         decoder4.parse_packet();
@@ -121,11 +130,9 @@ void loop() {
     }
 
     while (decoder4.packet_incoming()){
-        decoder4.print_buffer();
         size_t removed = decoder4.discard_packet();
         Serial.print("Removed bytes: ");
         Serial.println(removed);
-        decoder4.print_buffer();
         decoder4.advance();
         decoder4.parse_packet();
     }

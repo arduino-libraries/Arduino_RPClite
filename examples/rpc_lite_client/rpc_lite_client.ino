@@ -31,10 +31,10 @@ void loop() {
     blink_before();
     
     String str_res;
-    bool ko = client.call("loopback", str_res, "Sending a greeting");
+    bool ok = client.call("loopback", str_res, "Sending a greeting");
     Serial.println(str_res);
 
-    bool ok = client.call("mult", result, 2.0, 3.0);
+    ok = client.call("mult", result, 2.0, 3.0);
 
     if (ok) {
         Serial.print("Result: ");
@@ -43,7 +43,10 @@ void loop() {
 
     ok = client.call("divi", result, 2.0, 0.0);
     if (!ok) {
-        Serial.println("Testing Server-side exception OK");
+        Serial.print("Testing Server-side exception OK. ERR code: ");
+        Serial.print(client.lastError.code);
+        Serial.print(" ERR trace: ");
+        Serial.println(client.lastError.traceback);
     }
 
     int rand_int;
