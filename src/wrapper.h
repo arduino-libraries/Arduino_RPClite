@@ -124,7 +124,9 @@ private:
     template<size_t I = 0, typename... Ts>
     inline typename std::enable_if<I == sizeof...(Ts), bool>::type
     deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
-        return true; // Base case
+        (void)unpacker;    // silence unused parameter warning
+        (void)out;
+        return true;        // Base case
     }
 
     template<size_t I = 0, typename... Ts>

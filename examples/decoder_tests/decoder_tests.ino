@@ -3,14 +3,26 @@
 // Shorthand
 MsgPack::Packer packer;
 
+void print_buf() {
+    Serial.print("buf size: ");
+    Serial.print(packer.size());
+    Serial.print(" - ");
+
+    for (size_t i=0; i<packer.size(); i++){
+        Serial.print(packer.data()[i], HEX);
+        Serial.print(" ");
+    }
+    Serial.println(" ");
+}
+
 void runDecoderTest(const char* label) {
   Serial.println(label);
 
+  print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
   RpcDecoder<> decoder(dummy_transport);
 
   while (!decoder.packet_incoming()) {
-    decoder.print_buffer();
     Serial.println("Packet not ready");
     decoder.advance();
     decoder.parse_packet();
@@ -18,11 +30,9 @@ void runDecoderTest(const char* label) {
   }
 
   while (decoder.packet_incoming()) {
-    decoder.print_buffer();
     size_t removed = decoder.discard_packet();
     Serial.print("Removed bytes: ");
     Serial.println(removed);
-    decoder.print_buffer();
     decoder.advance();
     decoder.parse_packet();
   }

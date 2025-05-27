@@ -55,4 +55,4 @@ private:
 template<size_t MaxTransports>
 std::array<typename RpcDecoderManager<MaxTransports>::Entry, MaxTransports> RpcDecoderManager<MaxTransports>::decoders_;
 
-#endif RPCLITE_DECODER_MANAGER_H
+#endif //RPCLITE_DECODER_MANAGER_H

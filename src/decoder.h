@@ -81,9 +81,6 @@ public:
             pop_packet(bytes_checked);
             return true;
         }
-#ifdef DEBUG
-        print_buffer();
-#endif
         return false;
     }
 
@@ -153,7 +150,7 @@ public:
                 } else {
                     // something went wrong the call raised an error or the client issued a malformed request
                     if (msg_type == CALL_MSG) {
-                        send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+                        send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size());
                     }   // if notification client will never know something went wrong
                     discard_packet();   // agnostic pop
                     break;
@@ -161,7 +158,7 @@ public:
             } else {
                 // all is well we can respond and pop the deserialized packet
                 if (msg_type == CALL_MSG){
-                    send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+                    send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size());
                 }
                 pop_packet(bytes_checked);
                 break;
@@ -255,21 +252,6 @@ public:
     }
 
     inline size_t size() const {return _bytes_stored;}
-
-#ifdef DEBUG
-void print_buffer(){
-
-    Serial.print("buf size: ");
-    Serial.print(_bytes_stored);
-    Serial.print(" : ");
-
-    for (size_t i = 0; i < _bytes_stored; i++) {
-        Serial.print(_raw_buffer[i], HEX);
-        Serial.print(" ");
-    }
-    Serial.println();
-}
-#endif
 
 private:
     ITransport& _transport;
@@ -393,7 +375,7 @@ private:
         }
                 
         return true;
-        
+
     }
 
 };
