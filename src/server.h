@@ -22,8 +22,8 @@ public:
     RPCServer(ITransport& t) : transport(t), decoder(RpcDecoderManager<>::getDecoder(t)) {}
 
     template<typename F>
-    void bind(const MsgPack::str_t& name, F&& func){
-        dispatcher.bind(name, func);
+    bool bind(const MsgPack::str_t& name, F&& func){
+        return dispatcher.bind(name, func);
     }
 
     void run() {
