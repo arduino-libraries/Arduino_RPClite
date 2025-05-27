@@ -12,6 +12,8 @@ class RPCClient {
     RpcDecoder<>& decoder;
 
 public:
+    RpcError lastError;
+
     RPCClient(ITransport& t) : transport(t), decoder(RpcDecoderManager<>::getDecoder(t)) {}
 
     template<typename... Args>
@@ -27,19 +29,15 @@ public:
         if (!decoder.send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)){
         }
 
-        RpcError error;
+        static RpcError error;
         // blocking call
         while (!decoder.get_response(msg_id, result, error)){
             decoder.process();
             delay(1);
         }
 
-#ifdef DEBUG
-        if (error.code != NO_ERR){
-            Serial.print("Server-side error message: ");
-            Serial.println(error.traceback);
-        }
-#endif
+        lastError.code = error.code;
+        lastError.traceback = error.traceback;
 
         return (error.code == NO_ERR);
 
