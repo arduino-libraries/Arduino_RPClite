@@ -375,6 +375,8 @@ private:
             }
         }
 
+        return true;
+
     }
 
     bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
@@ -389,6 +391,9 @@ private:
                 return false;
             }
         }
+                
+        return true;
+        
     }
 
 };
