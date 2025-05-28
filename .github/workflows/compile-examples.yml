@@ -48,31 +48,22 @@ jobs:
       matrix:
         board:
           - fqbn: arduino:samd:mkrwifi1010
-            type: nina
             artifact-name-suffix: arduino-samd-mkrwifi1010
           - fqbn: arduino:samd:nano_33_iot
-            type: nina
             artifact-name-suffix: arduino-samd-nano_33_iot
           - fqbn: arduino:mbed_portenta:envie_m7
-            type: mbed_portenta
             artifact-name-suffix: arduino-mbed_portenta-envie_m7
           - fqbn: arduino:mbed_nano:nanorp2040connect
-            type: nina
             artifact-name-suffix: arduino-mbed_nano-nanorp2040connect
           - fqbn: arduino:mbed_nicla:nicla_vision
-            type: mbed_nicla
             artifact-name-suffix: arduino-mbed_nicla-nicla_vision
           - fqbn: arduino:mbed_opta:opta
-            type: mbed_opta
             artifact-name-suffix: arduino-mbed_opta-opta
           - fqbn: arduino:mbed_giga:giga
-            type: mbed_giga
             artifact-name-suffix: arduino-mbed_giga-giga
           - fqbn: arduino:renesas_portenta:portenta_c33
-            type: renesas_portenta
             artifact-name-suffix: arduino-renesas_portenta-portenta_c33
           - fqbn: arduino:renesas_uno:unor4wifi
-            type: renesas_uno
             artifact-name-suffix: arduino-renesas_uno-unor4wifi
 
     steps:
