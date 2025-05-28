@@ -16,8 +16,9 @@ public:
     template<typename F>
     bool bind(MsgPack::str_t name, F&& f) {
         if (_count >= N) return false;
-        static auto wrapper = wrap(std::forward<F>(f));
-        _entries[_count++] = {name, &wrapper};
+        using WrapperT = decltype(wrap(std::forward<F>(f)));
+        WrapperT* instance = new WrapperT(wrap(std::forward<F>(f)));
+        _entries[_count++] = {name, instance};
         return true;
     }
 
