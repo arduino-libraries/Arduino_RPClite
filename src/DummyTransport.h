@@ -24,6 +24,7 @@ class DummyTransport: public ITransport {
 
         size_t write(const uint8_t* data, size_t size) override {
             // Mock write
+            (void)data;
             return size;
         }
 

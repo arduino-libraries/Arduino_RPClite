@@ -94,11 +94,7 @@ public:
             return false;
         }
 
-        //unpacker not ready if deserialization fails at this point
-        std::tuple<Args...> args;
-        if (!deserialize_all<Args...>(unpacker, args)) return false;
-
-        return handle_call(args, packer);
+        return handle_call(unpacker, packer);
 
 #ifdef HANDLE_RPC_ERRORS
     } catch (const std::exception& e) {
@@ -116,7 +112,10 @@ private:
 
     template<typename Dummy = R>
     typename std::enable_if<std::is_void<Dummy>::value, bool>::type
-    handle_call(auto&& args, auto&& packer) {
+    handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
+        //unpacker not ready if deserialization fails at this point
+        std::tuple<Args...> args;
+        if (!deserialize_all<Args...>(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
         invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, nil);
@@ -125,7 +124,10 @@ private:
 
     template<typename Dummy = R>
     typename std::enable_if<!std::is_void<Dummy>::value, bool>::type
-    handle_call(auto&& args, auto&& packer) {
+    handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
+        //unpacker not ready if deserialization fails at this point
+        std::tuple<Args...> args;
+        if (!deserialize_all<Args...>(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
         R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, out);
