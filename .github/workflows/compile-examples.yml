@@ -38,7 +38,6 @@ jobs:
         - examples/decoder_example
         - examples/dispatcher_example
         - examples/rpc_lite_client
-        - examples/rpc_lite_dummy
         - examples/rpc_lite_server
         - examples/simple_client
         - examples/unpacker_test
