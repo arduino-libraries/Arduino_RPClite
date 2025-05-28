@@ -23,6 +23,7 @@ jobs:
   build:
     name: ${{ matrix.board.fqbn }}
     runs-on: ubuntu-latest
+    permissions: {}
 
     env:
       LIBRARIES: |
