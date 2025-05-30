@@ -2,49 +2,13 @@
 #define RPCLITE_WRAPPER_H
 
 #include "error.h"
+#include "rpclite_utils.h"
+
+using namespace RpcUtils::detail;
 
 #ifdef HANDLE_RPC_ERRORS
 #include <stdexcept>
 #endif
-
-//TODO maybe use arx::function_traits
-
-// C++11-compatible function_traits
-// Primary template: fallback
-template<typename T>
-struct function_traits;
-
-// Function pointer
-template<typename R, typename... Args>
-struct function_traits<R(*)(Args...)> {
-    using signature = R(Args...);
-};
-
-// std::function
-template<typename R, typename... Args>
-struct function_traits<std::function<R(Args...)>> {
-    using signature = R(Args...);
-};
-
-// Member function pointer (including lambdas)
-template<typename C, typename R, typename... Args>
-struct function_traits<R(C::*)(Args...) const> {
-    using signature = R(Args...);
-};
-
-// Deduction helper for lambdas
-template<typename T>
-struct function_traits {
-    using signature = typename function_traits<decltype(&T::operator())>::signature;
-};
-
-
-// Helper to invoke a function with a tuple of arguments
-template<typename F, typename Tuple, std::size_t... I>
-auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
-    -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
-    return f(std::get<I>(std::forward<Tuple>(t))...);
-};
 
 template<typename F>
 class RpcFunctionWrapper;
@@ -56,7 +20,7 @@ class IFunctionWrapper {
     };
 
 template<typename R, typename... Args>
-class RpcFunctionWrapper<R(Args...)>: public IFunctionWrapper {
+class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
 public:
     RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
@@ -133,41 +97,12 @@ private:
         packer.serialize(nil, out);
         return true;
     }
-
-    template<size_t I = 0, typename... Ts>
-    inline typename std::enable_if<I == sizeof...(Ts), bool>::type
-    deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
-        (void)unpacker;    // silence unused parameter warning
-        (void)out;
-        return true;        // Base case
-    }
-
-    template<size_t I = 0, typename... Ts>
-    inline typename std::enable_if<I < sizeof...(Ts), bool>::type
-    deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
-        if (!deserialize_single(unpacker, std::get<I>(out))) {
-            return false;
-        }
-        return deserialize_tuple<I+1>(unpacker, out); // Recursive unpacking
-    }
-
-    template<typename... Ts>
-    bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
-        return deserialize_tuple(unpacker, values);
-    }
-
-    template<typename T>
-    static bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
-        if (!unpacker.unpackable(value)) return false;
-        unpacker.deserialize(value);
-        return true;
-    }
 };
 
 
 template<typename F>
-auto wrap(F&& f) -> RpcFunctionWrapper<typename function_traits<typename std::decay<F>::type>::signature> {
-    using Signature = typename function_traits<typename std::decay<F>::type>::signature;
+auto wrap(F&& f) -> RpcFunctionWrapper<typename arx::function_traits<typename std::decay<F>::type>::function_type> {
+    using Signature = typename arx::function_traits<typename std::decay<F>::type>::function_type;
     return RpcFunctionWrapper<Signature>(std::forward<F>(f));
 };
 
