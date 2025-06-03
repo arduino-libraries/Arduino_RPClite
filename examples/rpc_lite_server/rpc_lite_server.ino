@@ -1,6 +1,6 @@
 #include <Arduino_RPClite.h>
 
-SerialTransport transport(&Serial2);
+SerialTransport transport(&Serial1);
 RPCServer server(transport);
 
 int add(int a, int b){
@@ -26,7 +26,7 @@ public:
 
 
 void setup() {
-    Serial2.begin(115200);
+    Serial1.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
