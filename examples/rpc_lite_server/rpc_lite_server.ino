@@ -15,6 +15,16 @@ MsgPack::str_t loopback(MsgPack::str_t message){
     return message;
 }
 
+class multiplier {
+public:
+
+    multiplier(){}
+    static int mult(int a, int b){
+        return a*b;
+    }
+};
+
+
 void setup() {
     Serial1.begin(115200);
     transport.begin();
@@ -24,6 +34,8 @@ void setup() {
 
     server.bind("add", add);
     server.bind("greet", greet);
+    server.bind("another_greeting", [] {return MsgPack::str_t ("This is a lambda greeting");});
+    server.bind("object_multi", &multiplier::mult);
 
 }
 
