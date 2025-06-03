@@ -1,6 +1,6 @@
 #include <Arduino_RPClite.h>
 
-SerialTransport transport(&Serial1);
+SerialTransport transport(&Serial2);
 RPCServer server(transport);
 
 int add(int a, int b){
@@ -15,8 +15,18 @@ MsgPack::str_t loopback(MsgPack::str_t message){
     return message;
 }
 
+class multiplier {
+public:
+
+    multiplier(){}
+    static int mult(int a, int b){
+        return a*b;
+    }
+};
+
+
 void setup() {
-    Serial1.begin(115200);
+    Serial2.begin(115200);
     transport.begin();
     pinMode(LED_BUILTIN, OUTPUT);
     Serial.begin(9600);
@@ -24,6 +34,8 @@ void setup() {
 
     server.bind("add", add);
     server.bind("greet", greet);
+    server.bind("another_greeting", [] {return MsgPack::str_t ("This is a lambda greeting");});
+    server.bind("object_multi", &multiplier::mult);
 
 }
 
