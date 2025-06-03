@@ -16,8 +16,7 @@ namespace detail {
 bool unpackObject(MsgPack::Unpacker& unpacker);
 
 bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
-
-    static MsgPack::arr_size_t sz;
+    MsgPack::arr_size_t sz;
     unpacker.deserialize(sz);
 
     size = 0;
@@ -34,7 +33,7 @@ bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
 }
 
 bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
-    static MsgPack::map_size_t sz;
+    MsgPack::map_size_t sz;
     unpacker.deserialize(sz);
 
     size = 0;
