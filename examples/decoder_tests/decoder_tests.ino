@@ -1,4 +1,5 @@
 #include <Arduino_RPClite.h>
+#include "DummyTransport.h"
 
 // Shorthand
 MsgPack::Packer packer;

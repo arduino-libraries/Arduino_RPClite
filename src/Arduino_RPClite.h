@@ -8,7 +8,6 @@
 #include "Arduino.h"
 
 //#define HANDLE_RPC_ERRORS
-#define DEBUG
 #include "transport.h"
 #include "client.h"
 #include "server.h"
@@ -17,7 +16,6 @@
 #include "decoder.h"
 #include "decoder_manager.h"
 
-#include "DummyTransport.h"
 #include "SerialTransport.h"
 
 #endif //ARDUINO_RPCLITE_H

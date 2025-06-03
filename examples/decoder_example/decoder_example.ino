@@ -1,5 +1,5 @@
-#define DEBUG
 #include <Arduino_RPClite.h>
+#include "DummyTransport.h"
 
 void blink_before(){
     digitalWrite(LED_BUILTIN, HIGH);
