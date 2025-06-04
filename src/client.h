@@ -29,7 +29,7 @@ public:
         if (!decoder.send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)){
         }
 
-        static RpcError error;
+        RpcError error;
         // blocking call
         while (!decoder.get_response(msg_id, result, error)){
             decoder.process();
