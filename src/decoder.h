@@ -29,7 +29,7 @@ public:
 
         if (call_type!=CALL_MSG && call_type!=NOTIFY_MSG) return false;
 
-        static MsgPack::Packer packer;
+        MsgPack::Packer packer;
         packer.clear();
 
         if (call_type == CALL_MSG){
@@ -56,7 +56,7 @@ public:
 
         if (!packet_incoming() || packet_type()!=RESP_MSG) return false;
 
-        static MsgPack::Unpacker unpacker;
+        MsgPack::Unpacker unpacker;
 
         size_t bytes_checked = 0;
 
@@ -86,7 +86,7 @@ public:
 
     template<typename RType>
     bool send_response(const int msg_id, const RpcError& error, const RType& result) {
-        static MsgPack::Packer packer;
+        MsgPack::Packer packer;
         MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
         MsgPack::object::nil_t nil;
 
@@ -107,8 +107,8 @@ public:
     void process_requests(RpcFunctionDispatcher<N>& dispatcher) {
         if (_packet_type!=CALL_MSG && _packet_type!=NOTIFY_MSG) return;
 
-        static MsgPack::Unpacker unpacker;
-        static MsgPack::Packer packer;
+        MsgPack::Unpacker unpacker;
+        MsgPack::Packer packer;
 
         size_t bytes_checked = 0;
 
@@ -196,7 +196,7 @@ public:
 
         if (packet_incoming() || buffer_empty()){return;}
 
-        static MsgPack::Unpacker unpacker;
+        MsgPack::Unpacker unpacker;
         unpacker.clear();
         unpacker.feed(_raw_buffer, 2);
 
@@ -275,7 +275,7 @@ private:
 
         size_t bytes_checked = 0;
         size_t container_size;
-        static MsgPack::Unpacker unpacker;
+        MsgPack::Unpacker unpacker;
 
         while (bytes_checked < _bytes_stored){
             bytes_checked++;
