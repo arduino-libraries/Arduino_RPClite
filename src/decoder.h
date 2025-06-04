@@ -4,7 +4,6 @@
 #include "MsgPack.h"
 #include "transport.h"
 #include "dispatcher.h"
-#include "rpclite_utils.h"
 
 
 #define NO_MSG          -1
@@ -293,6 +292,91 @@ private:
 
         return 0;
     }
+
+    bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
+        MsgPack::arr_size_t sz;
+        unpacker.deserialize(sz);
+
+        size = 0;
+        for (size_t i=0; i<sz.size(); i++){
+            if (unpackObject(unpacker)){
+                size++;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+
+    }
+
+    bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
+        MsgPack::map_size_t sz;
+        unpacker.deserialize(sz);
+
+        size = 0;
+        for (size_t i=0; i<sz.size(); i++){
+            if (unpackObject(unpacker) && unpackObject(unpacker)){  // must unpack key&value
+                size++;
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+
+    }
+
+    bool unpackObject(MsgPack::Unpacker& unpacker){
+
+        if (unpacker.isNil()){
+            static MsgPack::object::nil_t nil;
+            return unpacker.deserialize(nil);
+        }
+        if (unpacker.isBool()){
+            static bool b;
+            return unpacker.deserialize(b);
+        }
+        if (unpacker.isUInt() || unpacker.isInt()){
+            static int integer;
+            return unpacker.deserialize(integer);
+        }
+        if (unpacker.isFloat32()){
+            static float num32;
+            return unpacker.deserialize(num32);
+        }
+        if (unpacker.isFloat64()){
+            static double num64;
+            return unpacker.deserialize(num64);
+        }
+        if (unpacker.isStr()){
+            static MsgPack::str_t string;
+            return unpacker.deserialize(string);
+        }
+        if (unpacker.isBin()){
+            static MsgPack::bin_t<uint8_t> bytes;
+            return unpacker.deserialize(bytes);
+        }
+        if (unpacker.isArray()){
+            static size_t arr_sz;
+            return unpackArray(unpacker, arr_sz);
+        }
+        if (unpacker.isMap()){
+            static size_t map_sz;
+            return unpackMap(unpacker, map_sz);
+        }
+        if (unpacker.isFixExt() || unpacker.isExt()){
+            static MsgPack::object::ext e;
+            return unpacker.deserialize(e);
+        }
+        if (unpacker.isTimestamp()){
+            static MsgPack::object::timespec t;
+            return unpacker.deserialize(t);
+        }
+
+        return false;
+    }
+
 
 };
 
