@@ -263,7 +263,7 @@ private:
     inline bool buffer_full() const { return _bytes_stored == BufferSize; }
     inline bool buffer_empty() const { return _bytes_stored == 0;}
     inline void flush_buffer() {
-        uint8_t* discard_buf;
+        uint8_t discard_buf[CHUNK_SIZE];
         while (_transport.read(discard_buf, CHUNK_SIZE) > 0);
         _bytes_stored = 0;
     }
