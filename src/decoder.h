@@ -168,8 +168,12 @@ public:
 
     }
 
-    void process(){
-        if (advance()) parse_packet();
+    bool process(){
+        if (advance()) {
+            parse_packet();
+            return true;
+        }
+        return false;
     }
 
     // Fill the raw buffer to its capacity
@@ -188,8 +192,9 @@ public:
                     delay(1);
                 }
             }
+            return true;
         }
-        return true;
+        return false;
     }
 
     void parse_packet(){
