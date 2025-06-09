@@ -10,16 +10,21 @@
 #include "dispatcher.h"
 #include "decoder.h"
 #include "decoder_manager.h"
+#include "SerialTransport.h"
 
 #define MAX_CALLBACKS   100
 
 class RPCServer {
-    ITransport& transport;
-    RpcDecoder<>& decoder;
+    RpcDecoder<>* decoder = nullptr;
     RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
 
 public:
-    RPCServer(ITransport& t) : transport(t), decoder(RpcDecoderManager<>::getDecoder(t)) {}
+    RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
+
+    RPCServer(Stream& stream) {
+        ITransport* transport = (ITransport*) new SerialTransport(stream);
+        decoder = &RpcDecoderManager<>::getDecoder(*transport);
+    }
 
     template<typename F>
     bool bind(const MsgPack::str_t& name, F&& func){
@@ -27,8 +32,8 @@ public:
     }
 
     void run() {
-        decoder.process();
-        decoder.process_requests(dispatcher);
+        decoder->process();
+        decoder->process_requests(dispatcher);
         delay(1);
     }
 

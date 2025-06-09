@@ -1,12 +1,13 @@
 #include <Arduino_RPClite.h>
 
-SerialTransport transport(&Serial1);
-RPCClient client(transport);
+RPCClient client(Serial1);
 
 void setup() {
     Serial1.begin(115200);
-    transport.begin();
+    while(!Serial1);
+
     pinMode(LED_BUILTIN, OUTPUT);
+    
     Serial.begin(9600);
     while(!Serial);
 }
