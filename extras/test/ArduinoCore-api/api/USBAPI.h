@@ -35,7 +35,7 @@ typedef struct __attribute__((packed))
       uint8_t direction : 5;
       uint8_t type : 2;
       uint8_t transferDirection : 1;
-    };
+    } _;
   };
 	uint8_t 	bRequest;
 	uint8_t 	wValueL;
