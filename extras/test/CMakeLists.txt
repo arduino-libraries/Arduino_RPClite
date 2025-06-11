@@ -84,7 +84,6 @@ set(TEST_TARGET_SRCS
   src/itoa.cpp
   src/MillisFake.cpp
   src/PrintMock.cpp
-  src/StreamMock.cpp
   ${TEST_SRCS}
   ${TEST_DUT_SRCS}
 )
