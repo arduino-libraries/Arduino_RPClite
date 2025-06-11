@@ -13,9 +13,9 @@ namespace detail {
 /// --- deserialization helpers --- ///
 ///////////////////////////////////////
 
-bool unpackObject(MsgPack::Unpacker& unpacker);
+inline bool unpackObject(MsgPack::Unpacker& unpacker);
 
-bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
+inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
     MsgPack::arr_size_t sz;
     unpacker.deserialize(sz);
 
@@ -32,7 +32,7 @@ bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
 
 }
 
-bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
+inline bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
     MsgPack::map_size_t sz;
     unpacker.deserialize(sz);
 
@@ -49,7 +49,7 @@ bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
 
 }
 
-bool unpackObject(MsgPack::Unpacker& unpacker){
+inline bool unpackObject(MsgPack::Unpacker& unpacker){
 
     if (unpacker.isNil()){
         static MsgPack::object::nil_t nil;
@@ -100,7 +100,7 @@ bool unpackObject(MsgPack::Unpacker& unpacker){
 }
 
 template<typename T>
-bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
+inline bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
     if (!unpacker.unpackable(value)) return false;
     unpacker.deserialize(value);
     return true;
@@ -112,26 +112,26 @@ bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
 /////////////////////////////
 
 template<std::size_t I = 0, typename... Ts>
-typename std::enable_if<I == sizeof...(Ts), bool>::type
+inline typename std::enable_if<I == sizeof...(Ts), bool>::type
 deserialize_tuple(MsgPack::Unpacker&, std::tuple<Ts...>&) {
     return true;
 }
 
 template<std::size_t I = 0, typename... Ts>
-typename std::enable_if<I < sizeof...(Ts), bool>::type
+inline typename std::enable_if<I < sizeof...(Ts), bool>::type
 deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
     if (!deserialize_single(unpacker, std::get<I>(out))) return false;
     return deserialize_tuple<I + 1>(unpacker, out);
 }
 
 template<typename... Ts>
-bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
+inline bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
     return deserialize_tuple(unpacker, values);
 }
 
 // Helper to invoke a function with a tuple of arguments
 template<typename F, typename Tuple, std::size_t... I>
-auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
+inline auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
     -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
     return f(std::get<I>(std::forward<Tuple>(t))...);
 }
