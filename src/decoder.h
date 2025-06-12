@@ -4,7 +4,9 @@
 #include "MsgPack.h"
 #include "transport.h"
 #include "dispatcher.h"
+#include "rpclite_utils.h"
 
+using namespace RpcUtils::detail;
 
 #define NO_MSG          -1
 #define CALL_MSG        0
@@ -168,22 +170,18 @@ public:
 
     }
 
-    bool process(){
-        if (advance()) {
-            parse_packet();
-            return true;
-        }
-        return false;
+    void process(){
+        advance();
+        parse_packet();
     }
 
     // Fill the raw buffer to its capacity
-    bool advance() {
+    void advance() {
 
         uint8_t temp_buf[CHUNK_SIZE];
     
         if (_transport.available() && !buffer_full()){
             int bytes_read = _transport.read(temp_buf, CHUNK_SIZE);
-            if (bytes_read <= 0) return false;
     
             for (int i = 0; i < bytes_read; ++i) {
                 _raw_buffer[_bytes_stored] = temp_buf[i];
@@ -192,9 +190,8 @@ public:
                     delay(1);
                 }
             }
-            return true;
         }
-        return false;
+
     }
 
     void parse_packet(){
@@ -297,91 +294,6 @@ private:
 
         return 0;
     }
-
-    bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
-        MsgPack::arr_size_t sz;
-        unpacker.deserialize(sz);
-
-        size = 0;
-        for (size_t i=0; i<sz.size(); i++){
-            if (unpackObject(unpacker)){
-                size++;
-            } else {
-                return false;
-            }
-        }
-
-        return true;
-
-    }
-
-    bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
-        MsgPack::map_size_t sz;
-        unpacker.deserialize(sz);
-
-        size = 0;
-        for (size_t i=0; i<sz.size(); i++){
-            if (unpackObject(unpacker) && unpackObject(unpacker)){  // must unpack key&value
-                size++;
-            } else {
-                return false;
-            }
-        }
-
-        return true;
-
-    }
-
-    bool unpackObject(MsgPack::Unpacker& unpacker){
-
-        if (unpacker.isNil()){
-            static MsgPack::object::nil_t nil;
-            return unpacker.deserialize(nil);
-        }
-        if (unpacker.isBool()){
-            static bool b;
-            return unpacker.deserialize(b);
-        }
-        if (unpacker.isUInt() || unpacker.isInt()){
-            static int integer;
-            return unpacker.deserialize(integer);
-        }
-        if (unpacker.isFloat32()){
-            static float num32;
-            return unpacker.deserialize(num32);
-        }
-        if (unpacker.isFloat64()){
-            static double num64;
-            return unpacker.deserialize(num64);
-        }
-        if (unpacker.isStr()){
-            static MsgPack::str_t string;
-            return unpacker.deserialize(string);
-        }
-        if (unpacker.isBin()){
-            static MsgPack::bin_t<uint8_t> bytes;
-            return unpacker.deserialize(bytes);
-        }
-        if (unpacker.isArray()){
-            static size_t arr_sz;
-            return unpackArray(unpacker, arr_sz);
-        }
-        if (unpacker.isMap()){
-            static size_t map_sz;
-            return unpackMap(unpacker, map_sz);
-        }
-        if (unpacker.isFixExt() || unpacker.isExt()){
-            static MsgPack::object::ext e;
-            return unpacker.deserialize(e);
-        }
-        if (unpacker.isTimestamp()){
-            static MsgPack::object::timespec t;
-            return unpacker.deserialize(t);
-        }
-
-        return false;
-    }
-
 
 };
 

@@ -14,6 +14,8 @@ class SerialTransport: public ITransport {
 
         SerialTransport(Stream* stream): _stream(stream){}
 
+        SerialTransport(Stream& stream): _stream(&stream){}
+
         void begin(){}
 
         bool available() override {
