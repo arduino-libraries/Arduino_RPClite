@@ -32,8 +32,9 @@ public:
         RpcError error;
         // blocking call
         while (!decoder.get_response(msg_id, result, error)){
-            decoder.process();
-            delay(1);
+            if (!decoder.process()) {
+                delay(1);
+            }
         }
 
         lastError.code = error.code;
