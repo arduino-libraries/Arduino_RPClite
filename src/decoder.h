@@ -80,7 +80,7 @@ public:
             } else {                        // RPC returned an error
                 if (!unpacker.deserialize(error, nil)) continue;
             }
-            pop_packet(bytes_checked);
+            consume(bytes_checked);
             return true;
         }
         return false;
@@ -162,7 +162,7 @@ public:
                 if (msg_type == CALL_MSG){
                     send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size());
                 }
-                pop_packet(bytes_checked);
+                consume(bytes_checked);
                 break;
             }
 
@@ -170,7 +170,7 @@ public:
 
     }
 
-    void process(){
+    void decode(){
         advance();
         parse_packet();
     }
@@ -215,65 +215,8 @@ public:
 
     int packet_type() const {return _packet_type;}
 
-    // Get the oldest packet (returns false if no packet available)
-    bool get_next_packet(MsgPack::Unpacker& unpacker, size_t size) {
-        if (!packet_incoming()) return false;
-        unpacker.clear();
-        return unpacker.feed(_raw_buffer, size);
-    }
-
-    // Try to recover buffer error condition
-    void recover() {
-        // ensure parsing was attempted
-        parse_packet();
-        if (buffer_full() && !packet_incoming()){
-            flush_buffer();
-        }
-    }
-
-    // Discard the oldest packet. Returns the number of freed_bytes
-    size_t pop_packet(size_t size) {
-
-        if (size > _bytes_stored) return 0;
-
-        const size_t remaining_bytes = _bytes_stored - size;
-
-        // Shift remaining data forward (manual memmove for compatibility)
-        for (size_t i = 0; i < remaining_bytes; i++) {
-            _raw_buffer[i] = _raw_buffer[size + i];
-        }
-
-        _bytes_stored = remaining_bytes;
-        _packet_type = NO_MSG;
-
-        return size;
-    }
-
-    size_t discard_packet() {
-        return pop_packet(get_packet_size());
-    }
-
-    inline size_t size() const {return _bytes_stored;}
-
-private:
-    ITransport& _transport;
-    uint8_t _raw_buffer[BufferSize];
-    size_t _bytes_stored = 0;
-    int _packet_type = NO_MSG;
-    int _msg_id = 0;
-
-    inline bool buffer_full() const { return _bytes_stored == BufferSize; }
-    inline bool buffer_empty() const { return _bytes_stored == 0;}
-    inline void flush_buffer() {
-        uint8_t discard_buf[CHUNK_SIZE];
-        while (_transport.read(discard_buf, CHUNK_SIZE) > 0);
-        _bytes_stored = 0;
-    }
-    inline size_t send(const uint8_t* data, const size_t size) {
-        return _transport.write(data, size);
-    }
-
-    size_t get_packet_size(){
+    // Get the size of the next packet in the buffer (must be array contained, no other requirements)
+    size_t get_packet_size() {
 
         size_t bytes_checked = 0;
         size_t container_size;
@@ -293,6 +236,46 @@ private:
         }
 
         return 0;
+    }
+
+    // Discard the next (array) packet in the buffer, returns the number of bytes consumed.
+    size_t discard_packet() {
+        return consume(get_packet_size());
+    }
+
+    inline size_t size() const {return _bytes_stored;}
+
+private:
+    ITransport& _transport;
+    uint8_t _raw_buffer[BufferSize];
+    size_t _bytes_stored = 0;
+    int _packet_type = NO_MSG;
+    int _msg_id = 0;
+
+    inline bool buffer_full() const { return _bytes_stored == BufferSize; }
+
+    inline bool buffer_empty() const { return _bytes_stored == 0;}
+
+    inline size_t send(const uint8_t* data, const size_t size) {
+        return _transport.write(data, size);
+    }
+
+    // Consume the first 'size' bytes of the buffer, shifting remaining data forward
+    size_t consume(size_t size) {
+
+        if (size > _bytes_stored) return 0;
+
+        const size_t remaining_bytes = _bytes_stored - size;
+
+        // Shift remaining data forward (manual memmove for compatibility)
+        for (size_t i = 0; i < remaining_bytes; i++) {
+            _raw_buffer[i] = _raw_buffer[size + i];
+        }
+
+        _bytes_stored = remaining_bytes;
+        _packet_type = NO_MSG;
+
+        return size;
     }
 
 };

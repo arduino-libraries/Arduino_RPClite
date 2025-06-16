@@ -32,7 +32,7 @@ public:
     }
 
     void run() {
-        decoder->process();
+        decoder->decode();
         decoder->process_requests(dispatcher);
         delay(1);
     }
