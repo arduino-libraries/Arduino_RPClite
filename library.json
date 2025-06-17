@@ -17,8 +17,6 @@
   "platforms": "*",
   "dependencies":
   {
-    "hideakitai/ArxContainer": ">=0.6.0",
-    "hideakitai/ArxTypeTraits": "*",
-    "hideakitai/DebugLog": ">=0.8.1"
+    "hideakitai/MsgPack": ">=0.4.2"
   }
 }
