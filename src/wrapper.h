@@ -10,6 +10,7 @@ using namespace RpcUtils::detail;
 #include <stdexcept>
 #endif
 
+
 template<typename F>
 class RpcFunctionWrapper;
 
