@@ -38,7 +38,7 @@ public:
         RpcError error;
         // blocking call
         while (!decoder->get_response(msg_id, result, error)){
-            decoder->process();
+            decoder->decode();
             delay(1);
         }
 

@@ -25,8 +25,7 @@ void runDecoderTest(const char* label) {
 
   while (!decoder.packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.advance();
-    decoder.parse_packet();
+    decoder.decode();
     delay(50);
   }
 
@@ -34,8 +33,7 @@ void runDecoderTest(const char* label) {
     size_t removed = decoder.discard_packet();
     Serial.print("Removed bytes: ");
     Serial.println(removed);
-    decoder.advance();
-    decoder.parse_packet();
+    decoder.decode();
   }
 
   Serial.println("-- Done --\n");

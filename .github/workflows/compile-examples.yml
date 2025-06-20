@@ -30,9 +30,7 @@ jobs:
       LIBRARIES: |
         # Install the NetworkConfigurator library from the repository
         - source-path: ./
-        - name: ArxContainer
-        - name: ArxTypeTraits
-        - name: DebugLog
+        - name: MsgPack
       SKETCH_PATHS: |
         - examples/decoder_tests
         - examples/dispatcher_example
