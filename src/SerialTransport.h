@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef SERIALTRANSPORT_H
 #define SERIALTRANSPORT_H
 #include "transport.h"
@@ -23,13 +19,9 @@ class SerialTransport: public ITransport {
         }
 
         size_t write(const uint8_t* data, size_t size) override {
-
-            for (size_t i=0; i<size; i++){
-                _stream->write(data[i]);
-            }
-
+            _stream->write(data, size);
             return size;
-        }
+        }   
 
         size_t read(uint8_t* buffer, size_t size) override {
             _stream->setTimeout(0);

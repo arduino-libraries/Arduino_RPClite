@@ -16,6 +16,11 @@ namespace detail {
 inline bool unpackObject(MsgPack::Unpacker& unpacker);
 
 inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
+
+    if (!unpacker.isArray()) {
+        return false; // Not an array
+    }
+
     MsgPack::arr_size_t sz;
     unpacker.deserialize(sz);
 
@@ -33,6 +38,11 @@ inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
 }
 
 inline bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
+
+    if (!unpacker.isMap()) {
+        return false; // Not a map
+    }
+
     MsgPack::map_size_t sz;
     unpacker.deserialize(sz);
 
