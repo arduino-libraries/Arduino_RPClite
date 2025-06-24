@@ -34,7 +34,7 @@ public:
     void run() {
         decoder->decode();
         decoder->process_requests(dispatcher);
-        delay(1);
+        //delay(1);
     }
 
 };

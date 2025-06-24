@@ -39,7 +39,7 @@ public:
         // blocking call
         while (!decoder->get_response(msg_id, result, error)){
             decoder->decode();
-            delay(1);
+            //delay(1);
         }
 
         lastError.code = error.code;

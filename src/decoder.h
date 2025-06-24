@@ -178,25 +178,16 @@ public:
     // Fill the raw buffer to its capacity
     void advance() {
 
-        uint8_t temp_buf[CHUNK_SIZE];
-    
-        if (_transport.available() && !buffer_full()){
-            int bytes_read = _transport.read(temp_buf, CHUNK_SIZE);
-    
-            for (int i = 0; i < bytes_read; ++i) {
-                _raw_buffer[_bytes_stored] = temp_buf[i];
-                _bytes_stored++;
-                while (buffer_full()){
-                    delay(1);
-                }
-            }
+        if (_transport.available() && !buffer_full()) {
+            size_t bytes_read = _transport.read(_raw_buffer + _bytes_stored, BufferSize - _bytes_stored);
+            _bytes_stored += bytes_read;
         }
 
     }
 
     void parse_packet(){
 
-        if (packet_incoming() || buffer_empty()){return;}
+        if (packet_incoming() || _bytes_stored < 2){return;}
 
         MsgPack::Unpacker unpacker;
         unpacker.clear();
