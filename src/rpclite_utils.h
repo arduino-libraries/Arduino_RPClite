@@ -134,11 +134,6 @@ deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
     return deserialize_tuple<I + 1>(unpacker, out);
 }
 
-template<typename... Ts>
-inline bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
-    return deserialize_tuple(unpacker, values);
-}
-
 // Helper to invoke a function with a tuple of arguments
 template<typename F, typename Tuple, std::size_t... I>
 inline auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)

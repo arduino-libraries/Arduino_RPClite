@@ -56,7 +56,7 @@ public:
     template<typename RType>
     bool get_response(const int msg_id, RType& result, RpcError& error) {
 
-        if (!packet_incoming() || packet_type()!=RESP_MSG) return false;
+        if (packet_type()!=RESP_MSG) return false;
 
         MsgPack::Unpacker unpacker;
 
