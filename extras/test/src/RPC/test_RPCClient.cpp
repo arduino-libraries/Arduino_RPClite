@@ -16,17 +16,18 @@
 #define CALL_TAG 0x00
 #define RESP_TAG 0x01
 
-#define COMPARE_ARRAYS(expected, got) compareArrays(Catch::getResultCapture().getCurrentTestName(), __LINE__, expected, got, sizeof(expected), sizeof(got))
-template <typename T>
-void compareArrays(const std::string & test, unsigned line, const T *expected, const T *got, size_t expectedSize, size_t gotSize) {
-  INFO("Test case [" << test << "] failed at line " << line); // Reported only if REQUIRE fails
-  INFO("Array size: expected: " << expectedSize << ", got: " << gotSize);
-  REQUIRE(expectedSize == gotSize);
-  for (size_t i = 0; i < expectedSize; ++i) {
-    INFO("Index " << i << ": expected " << static_cast<int>(expected[i]) << ", got " << static_cast<int>(got[i]));
-    REQUIRE(int(expected[i]) == int(got[i]));
+// convert a byte array into an hex string
+std::string to_hex_string(const unsigned char* data, size_t size) {
+  std::ostringstream oss;
+  oss << std::hex << std::setw(2) << std::setfill('0');
+  for (size_t i = 0; i < size; ++i) {
+    oss << static_cast<int>(data[i]);
   }
+  return oss.str();
 }
+
+#define COMPARE_ARRAYS(expected, got) \
+  REQUIRE(to_hex_string(expected, sizeof(expected)) == to_hex_string(got, sizeof(expected)))
 
 TEST_CASE("RPCClient::call", "[RPCClient-01]")
 {
