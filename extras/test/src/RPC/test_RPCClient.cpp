@@ -24,7 +24,7 @@ void compareArrays(const std::string & test, unsigned line, const T *expected, c
   REQUIRE(expectedSize == gotSize);
   for (size_t i = 0; i < expectedSize; ++i) {
     INFO("Index " << i << ": expected " << static_cast<int>(expected[i]) << ", got " << static_cast<int>(got[i]));
-    REQUIRE(expected[i] == got[i]);
+    REQUIRE(int(expected[i]) == int(got[i]));
   }
 }
 
