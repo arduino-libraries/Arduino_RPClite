@@ -31,16 +31,17 @@ public:
     }
 
     void run() {
-        decoder->decode();
-        read_rpc();
+        get_rpc();
         process_request();
         send_response();
         //delay(1);
     }
 
 protected:
-    void read_rpc() {
-        _rpc_size = decoder->read_rpc(_rpc_buffer, RPC_BUFFER_SIZE);
+    void get_rpc() {
+        decoder->decode();
+        if (_rpc_size > 0) return; // Already have a request
+        _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
     }
 
     void process_request() {
@@ -90,9 +91,9 @@ protected:
 
     }
 
-    void send_response() {
+    bool send_response() {
         if (res_packer.size() > 0) {
-            decoder->send(reinterpret_cast<const uint8_t*>(res_packer.data()), res_packer.size());
+            return decoder->send_response(res_packer);
         }
     }
 
