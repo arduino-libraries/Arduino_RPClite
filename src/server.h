@@ -87,14 +87,22 @@ protected:
         if (msg_type == CALL_MSG) res_packer.serialize(resp_size, RESP_MSG, msg_id);
 
         dispatcher.call(method, unpacker, res_packer);
-        reset_rpc();
 
     }
 
     bool send_response() {
-        if (res_packer.size() > 0) {
-            return decoder->send_response(res_packer);
+        if (_rpc_type == NO_MSG || res_packer.size() == 0) {
+            return true; // No response to send
         }
+
+        if (_rpc_type == NOTIFY_MSG) {
+            reset_rpc();
+            return true;
+        }
+
+        reset_rpc();
+        return decoder->send_response(res_packer);
+
     }
 
 private:
@@ -102,7 +110,7 @@ private:
     RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
     uint8_t _rpc_buffer[RPC_BUFFER_SIZE];
     size_t _rpc_size = 0;
-    uint8_t _rpc_type = NO_MSG;
+    int _rpc_type = NO_MSG;
     MsgPack::Packer res_packer;
     
     void reset_rpc() {

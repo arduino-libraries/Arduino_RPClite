@@ -7,8 +7,6 @@
 
 using namespace RpcUtils::detail;
 
-
-
 #define MIN_RPC_BYTES   4
 
 #define MAX_BUFFER_SIZE 1024
@@ -50,7 +48,7 @@ public:
     template<typename RType>
     bool get_response(const int msg_id, RType& result, RpcError& error) {
 
-        if (!packet_incoming() || packet_type()!=RESP_MSG) return false;
+        if (!packet_incoming() || _packet_type!=RESP_MSG) return false;
 
         MsgPack::Unpacker unpacker;
         unpacker.clear();
@@ -86,7 +84,7 @@ public:
 
     size_t get_request(uint8_t* buffer, size_t buffer_size) {
 
-        if (packet_type() != CALL_MSG && packet_type() != NOTIFY_MSG) {
+        if (_packet_type != CALL_MSG && _packet_type != NOTIFY_MSG) {
             return 0; // No RPC
         }
 
@@ -136,6 +134,7 @@ public:
 
                 _packet_type = type;
                 _packet_size = bytes_checked;
+                break;
             } else {
                 continue;
             }
