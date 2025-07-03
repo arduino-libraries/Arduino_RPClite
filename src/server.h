@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef RPCLITE_SERVER_H
 #define RPCLITE_SERVER_H
 

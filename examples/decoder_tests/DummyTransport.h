@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef DUMMY_TRANSPORT_H
 #define DUMMY_TRANSPORT_H
 #include "transport.h"

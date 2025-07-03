@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
 #include "error.h"
