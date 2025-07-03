@@ -40,7 +40,6 @@ public:
 
         // blocking call
         while (!get_response(result)){
-            decoder->decode();
             //delay(1);
         }
 

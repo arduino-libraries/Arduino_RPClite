@@ -3,7 +3,6 @@
 
 #include "MsgPack.h"
 #include "transport.h"
-#include "dispatcher.h"
 #include "rpclite_utils.h"
 
 using namespace RpcUtils::detail;
@@ -56,7 +55,8 @@ public:
         MsgPack::Unpacker unpacker;
         unpacker.clear();
 
-        if (!unpacker.feed(_raw_buffer, get_packet_size())) return false;
+        size_t res_size = get_packet_size();
+        if (!unpacker.feed(_raw_buffer, res_size)) return false;
 
         MsgPack::arr_size_t resp_size;
         int resp_type;
@@ -74,7 +74,8 @@ public:
             if (!unpacker.deserialize(error, nil)) return false;
         }
 
-        consume(get_packet_size());
+        reset_packet();
+        consume(res_size);
         return true;
 
     }
