@@ -14,6 +14,7 @@ public:
 
     RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
+    // TODO This is problematic becasue 'new' makes different Transport objs and different transports make different decoders
     RPCClient(Stream& stream) {
         ITransport* transport = (ITransport*) new SerialTransport(stream);
         decoder = &RpcDecoderManager<>::getDecoder(*transport);

@@ -16,6 +16,7 @@ class RPCServer {
 public:
     RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
+    // TODO This is problematic becasue 'new' makes different Transport objs and different transports make different decoders
     RPCServer(Stream& stream) {
         ITransport* transport = (ITransport*) new SerialTransport(stream);
         decoder = &RpcDecoderManager<>::getDecoder(*transport);
@@ -34,10 +35,11 @@ public:
     }
 
 protected:
-    void get_rpc() {
+    bool get_rpc() {
         decoder->decode();
-        if (_rpc_size > 0) return; // Already have a request
+        if (_rpc_size > 0) return true; // Already have a request
         _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
+        return _rpc_size > 0;
     }
 
     void process_request() {
