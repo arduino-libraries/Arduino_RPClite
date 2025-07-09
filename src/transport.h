@@ -1,8 +1,6 @@
 #ifndef RPCLITE_TRANSPORT_H
 #define RPCLITE_TRANSPORT_H
 
-#include <Arduino.h>
-
 class ITransport {
 // Transport abstraction interface
 

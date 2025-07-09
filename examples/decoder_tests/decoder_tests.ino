@@ -29,12 +29,9 @@ void runDecoderTest(const char* label) {
     delay(50);
   }
 
-  while (decoder.packet_incoming()) {
-    size_t removed = decoder.discard_packet();
-    Serial.print("Removed bytes: ");
-    Serial.println(removed);
-    decoder.decode();
-  }
+  size_t pack_size = decoder.get_packet_size();
+  Serial.print("1st Packet size: ");
+  Serial.println(pack_size);
 
   Serial.println("-- Done --\n");
 }

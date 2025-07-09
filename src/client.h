@@ -14,11 +14,11 @@ public:
 
     RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
-    // TODO This is problematic becasue 'new' makes different Transport objs and different transports make different decoders
-    RPCClient(Stream& stream) {
-        ITransport* transport = (ITransport*) new SerialTransport(stream);
-        decoder = &RpcDecoderManager<>::getDecoder(*transport);
-    }
+    // This constructor was removed because it leads to decoder duplication
+    // RPCClient(Stream& stream) {
+    //     ITransport* transport = (ITransport*) new SerialTransport(stream);
+    //     decoder = &RpcDecoderManager<>::getDecoder(*transport);
+    // }
 
     template<typename... Args>
     void notify(const MsgPack::str_t method, Args&&... args)  {

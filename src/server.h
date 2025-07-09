@@ -16,11 +16,11 @@ class RPCServer {
 public:
     RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
-    // TODO This is problematic becasue 'new' makes different Transport objs and different transports make different decoders
-    RPCServer(Stream& stream) {
-        ITransport* transport = (ITransport*) new SerialTransport(stream);
-        decoder = &RpcDecoderManager<>::getDecoder(*transport);
-    }
+    // This constructor was removed because it leads to decoder duplication
+    // RPCServer(Stream& stream) {
+    //     ITransport* transport = (ITransport*) new SerialTransport(stream);
+    //     decoder = &RpcDecoderManager<>::getDecoder(*transport);
+    // }
 
     template<typename F>
     bool bind(const MsgPack::str_t& name, F&& func){
