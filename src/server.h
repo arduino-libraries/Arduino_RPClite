@@ -23,7 +23,7 @@ public:
     // }
 
     template<typename F>
-    bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t& tag=""){
+    bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t tag=""){
         return dispatcher.bind(name, func, tag);
     }
 
