@@ -44,7 +44,6 @@ public:
 
     }
 
-protected:
     template<typename... Args>
     bool send_rpc(const MsgPack::str_t method, Args&&... args) {
         int msg_id;

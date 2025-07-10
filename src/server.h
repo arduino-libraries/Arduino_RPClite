@@ -23,8 +23,12 @@ public:
     // }
 
     template<typename F>
-    bool bind(const MsgPack::str_t& name, F&& func){
-        return dispatcher.bind(name, func);
+    bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t& tag){
+        return dispatcher.bind(name, func, tag);
+    }
+
+    bool hasTag(MsgPack::str_t name, MsgPack::str_t tag){
+        return dispatcher.hasTag(name, tag);
     }
 
     void run() {
@@ -34,15 +38,15 @@ public:
         //delay(1);
     }
 
-protected:
     bool get_rpc() {
         decoder->decode();
         if (_rpc_size > 0) return true; // Already have a request
+        // TODO USE A QUEUE
         _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
         return _rpc_size > 0;
     }
 
-    void process_request() {
+    void process_request(MsgPack::str_t tag="") {
         if (_rpc_size == 0) return;
 
         MsgPack::Unpacker unpacker;
@@ -77,6 +81,8 @@ protected:
             reset_rpc();
             return; // Invalid request size/type
         }
+
+        if (!hasTag(method, tag)) return;
 
         _rpc_type = msg_type;
 
