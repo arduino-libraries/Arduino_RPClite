@@ -23,7 +23,7 @@ public:
                 entry.transport = &transport;
                 // In-place construct
                 entry.decoder = new (&entry.decoder_storage.instance) RpcDecoder<>(transport);
-                decoders_size++;
+                decoders_count++;
                 return *entry.decoder;
             }
         }
@@ -32,8 +32,8 @@ public:
         while (true);
     }
 
-    static size_t size() {
-        return decoders_size;
+    static size_t getDecodersCount() const {
+        return decoders_count;
     }
 
 private:
@@ -54,7 +54,7 @@ private:
     };
 
     static std::array<Entry, MaxTransports> decoders_;
-    static size_t decoders_size;
+    static size_t decoders_count;
 };
 
 // Definition of the static member
@@ -62,6 +62,6 @@ template<size_t MaxTransports>
 std::array<typename RpcDecoderManager<MaxTransports>::Entry, MaxTransports> RpcDecoderManager<MaxTransports>::decoders_;
 
 template<size_t MaxTransports>
-size_t RpcDecoderManager<MaxTransports>::decoders_size = 0;
+size_t RpcDecoderManager<MaxTransports>::decoders_count = 0;
 
 #endif //RPCLITE_DECODER_MANAGER_H
