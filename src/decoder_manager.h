@@ -32,7 +32,7 @@ public:
         while (true);
     }
 
-    static size_t getDecodersCount() const {
+    static size_t getDecodersCount() {
         return decoders_count;
     }
 
