@@ -104,8 +104,9 @@ public:
             return true;
         }
 
+        bool send_res = decoder->send_response(res_packer);
         reset_rpc();
-        return decoder->send_response(res_packer);
+        return send_res;
 
     }
 
