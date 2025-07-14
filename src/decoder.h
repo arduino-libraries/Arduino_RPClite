@@ -151,6 +151,8 @@ public:
 
     inline size_t size() const {return _bytes_stored;}
 
+    friend class DecoderTester;
+
 private:
     ITransport& _transport;
     uint8_t _raw_buffer[BufferSize];
@@ -188,21 +190,18 @@ private:
         _packet_size = 0;
     }
 
-    size_t consume(size_t size) {
-
-        if (size > _bytes_stored) return 0;
-
-        const size_t remaining_bytes = _bytes_stored - size;
-
-        // Shift remaining data forward (manual memmove for compatibility)
-        for (size_t i = 0; i < remaining_bytes; i++) {
-            _raw_buffer[i] = _raw_buffer[size + i];
-        }
-
-        _bytes_stored = remaining_bytes;
-
-        return size;
+size_t consume(size_t size, size_t offset = 0) {
+    // Boundary checks
+    if (offset + size >= _bytes_stored || size == 0) return 0;
+    
+    size_t remaining_bytes = _bytes_stored - size;
+    for (size_t i=offset; i<remaining_bytes; i++){
+        _raw_buffer[i] = _raw_buffer[i+size];
     }
+
+    _bytes_stored = remaining_bytes;
+    return size;
+}
 
 };
 
