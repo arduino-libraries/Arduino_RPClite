@@ -8,7 +8,8 @@ A MessagePack RPC library for Arduino allows to create a client/server architect
 ```cpp
 #include <Arduino_RPClite.h>
 
-RPCServer server(Serial1);
+SerialTransport transport(Serial1);
+RPCServer server(transport);
 
 int add(int a, int b){
     return a+b;
@@ -42,7 +43,8 @@ void loop() {
 ```cpp
 #include <Arduino_RPClite.h>
 
-RPCClient client(Serial1);
+SerialTransport transport(Serial1);
+RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);
