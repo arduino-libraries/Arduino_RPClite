@@ -1,7 +1,7 @@
 #ifndef RPCLITE_REQUEST_H
 #define RPCLITE_REQUEST_H
 
-#define RPC_BUFFER_SIZE  512
+#define RPC_BUFFER_SIZE  1024
 
 
 #include "rpclite_utils.h"

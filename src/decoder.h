@@ -84,6 +84,8 @@ public:
 
     MsgPack::str_t fetch_method(){
 
+        if (!packet_incoming()){return "";}
+
         if (_packet_type != CALL_MSG && _packet_type != NOTIFY_MSG) {
             return ""; // No RPC
         }
@@ -240,7 +242,7 @@ private:
 
 size_t consume(size_t size, size_t offset = 0) {
     // Boundary checks
-    if (offset + size >= _bytes_stored || size == 0) return 0;
+    if (offset + size > _bytes_stored || size == 0) return 0;
     
     size_t remaining_bytes = _bytes_stored - size;
     for (size_t i=offset; i<remaining_bytes; i++){

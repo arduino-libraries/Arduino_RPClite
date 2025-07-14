@@ -48,7 +48,7 @@ public:
 
         if (method == "" || !hasTag(method, tag)) return false;
 
-        req.size = decoder->get_request(req.buffer, RPC_BUFFER_SIZE);
+        req.size = decoder->get_request(req.buffer, RPC_BUFFER_SIZE);   // todo overload get_request(RPCRequest& req) so all the request info is in req
         return req.size > 0;
     }
 
@@ -66,7 +66,7 @@ public:
         MsgPack::arr_size_t req_size;
 
         if (!unpacker.deserialize(req_size, msg_type)) {
-            reset_rpc();
+            req.reset();
             return; // Header not unpackable
         }
 
@@ -110,16 +110,7 @@ public:
 private:
     RpcDecoder<>* decoder = nullptr;
     RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
-    uint8_t _rpc_buffer[RPC_BUFFER_SIZE];
-    size_t _rpc_size = 0;
-    int _rpc_type = NO_MSG;
-    MsgPack::Packer res_packer;
     
-    void reset_rpc() {
-        _rpc_size = 0;
-        _rpc_type = NO_MSG;
-    }
-
 };
 
 #endif //RPCLITE_SERVER_H
