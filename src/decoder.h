@@ -82,6 +82,54 @@ public:
         return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
     }
 
+    MsgPack::str_t fetch_method(){
+
+        if (_packet_type != CALL_MSG && _packet_type != NOTIFY_MSG) {
+            return ""; // No RPC
+        }
+
+        MsgPack::Unpacker unpacker;
+
+        unpacker.clear();
+        if (!unpacker.feed(_raw_buffer, _packet_size)) {    // feed should not fail at this point
+            consume(_packet_size);
+            reset_packet();
+            return "";
+        };
+
+        int msg_type;
+        int msg_id;
+        MsgPack::str_t method;
+        MsgPack::arr_size_t req_size;
+
+        if (!unpacker.deserialize(req_size, msg_type)) {
+            consume(_packet_size);
+            reset_packet();
+            return ""; // Header not unpackable
+        }
+
+        if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
+            if (!unpacker.deserialize(msg_id, method)) {
+                consume(_packet_size);
+                reset_packet();
+                return ""; // Method not unpackable
+            }
+        } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
+            if (!unpacker.deserialize(method)) {
+                consume(_packet_size);
+                reset_packet();
+                return ""; // Method not unpackable
+            }
+        } else {
+            consume(_packet_size);
+            reset_packet();
+            return ""; // Invalid request size/type
+        }
+
+        return method;
+
+    }
+
     size_t get_request(uint8_t* buffer, size_t buffer_size) {
 
         if (_packet_type != CALL_MSG && _packet_type != NOTIFY_MSG) {

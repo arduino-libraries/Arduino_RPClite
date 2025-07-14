@@ -1,6 +1,7 @@
 #ifndef RPCLITE_SERVER_H
 #define RPCLITE_SERVER_H
 
+#include "request.h"
 #include "error.h"
 #include "wrapper.h"
 #include "dispatcher.h"
@@ -9,7 +10,6 @@
 #include "SerialTransport.h"
 
 #define MAX_CALLBACKS   100
-#define RPC_BUFFER_SIZE  1024
 
 class RPCServer {
 
@@ -32,30 +32,33 @@ public:
     }
 
     void run() {
-        get_rpc();
-        process_request();
-        send_response();
-        //delay(1);
+
+        RPCRequest req;
+        if (get_rpc(req)) {         // Populate local request
+            process_request(req);   // Process local data
+            send_response(req);     // Send from local data
+        }
+
     }
 
-    bool get_rpc() {
+    bool get_rpc(RPCRequest& req, MsgPack::str_t tag="") {
         decoder->decode();
-        if (_rpc_size > 0) return true; // Already have a request
-        // TODO USE A QUEUE
-        _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
-        return _rpc_size > 0;
+
+        MsgPack::str_t method = decoder->fetch_method();
+
+        if (method == "" || !hasTag(method, tag)) return false;
+
+        req.size = decoder->get_request(req.buffer, RPC_BUFFER_SIZE);
+        return req.size > 0;
     }
 
-    void process_request(MsgPack::str_t tag="") {
-        if (_rpc_size == 0) return;
+    void process_request(RPCRequest& req) {
+        if (req.size == 0) return;
 
         MsgPack::Unpacker unpacker;
 
         unpacker.clear();
-        if (!unpacker.feed(_rpc_buffer, _rpc_size)) {
-            _rpc_size = 0; // Reset size on error
-            return; // Error in unpacking
-        }
+        if (!unpacker.feed(req.buffer, req.size)) return;
 
         int msg_type;
         int msg_id;
@@ -69,43 +72,38 @@ public:
 
         if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
             if (!unpacker.deserialize(msg_id, method)) {
-                reset_rpc();
+                req.reset();
                 return; // Method not unpackable
             }
         } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
             if (!unpacker.deserialize(method)) {
-                reset_rpc();
+                req.reset();
                 return; // Method not unpackable
             }
         } else {
-            reset_rpc();
+            req.reset();
             return; // Invalid request size/type
         }
 
-        if (!hasTag(method, tag)) return;
-
-        _rpc_type = msg_type;
+        req.type = msg_type;
 
         MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
-        res_packer.clear();
-        if (msg_type == CALL_MSG) res_packer.serialize(resp_size, RESP_MSG, msg_id);
+        req.res_packer.clear();
+        if (msg_type == CALL_MSG) req.res_packer.serialize(resp_size, RESP_MSG, msg_id);
 
-        dispatcher.call(method, unpacker, res_packer);
+        dispatcher.call(method, unpacker, req.res_packer);
 
     }
 
-    bool send_response() {
-        if (_rpc_type == NO_MSG || res_packer.size() == 0) {
+    bool send_response(RPCRequest& req) {
+
+        if (req.type == NO_MSG || req.res_packer.size() == 0) {
             return true; // No response to send
         }
 
-        if (_rpc_type == NOTIFY_MSG) {
-            reset_rpc();
-            return true;
-        }
+        if (req.type == NOTIFY_MSG) return true;
 
-        reset_rpc();
-        return decoder->send_response(res_packer);
+        return decoder->send_response(req.res_packer);
 
     }
 
