@@ -7,7 +7,7 @@
 
 class RPCClient {
     RpcDecoder<>* decoder = nullptr;
-    int _waiting_msg_id;
+    uint32_t _waiting_msg_id;
 
 public:
     RpcError lastError;
@@ -22,7 +22,7 @@ public:
 
     template<typename... Args>
     void notify(const MsgPack::str_t method, Args&&... args)  {
-        int _id;
+        uint32_t _id;
         decoder->send_call(NOTIFY_MSG, method, _id, std::forward<Args>(args)...);
     }
 
@@ -46,7 +46,7 @@ public:
 
     template<typename... Args>
     bool send_rpc(const MsgPack::str_t method, Args&&... args) {
-        int msg_id;
+        uint32_t msg_id;
         if (decoder->send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)) {
             _waiting_msg_id = msg_id;
             return true;
