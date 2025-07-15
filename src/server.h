@@ -58,7 +58,7 @@ public:
         }
 
         int msg_type;
-        int msg_id;
+        uint32_t msg_id;
         MsgPack::str_t method;
         MsgPack::arr_size_t req_size;
 

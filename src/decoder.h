@@ -19,7 +19,7 @@ public:
     RpcDecoder(ITransport& transport) : _transport(transport) {}
 
     template<typename... Args>
-    bool send_call(const int call_type, const MsgPack::str_t method, int& msg_id, Args&&... args) {
+    bool send_call(const int call_type, const MsgPack::str_t method, uint32_t& msg_id, Args&&... args) {
 
         if (call_type!=CALL_MSG && call_type!=NOTIFY_MSG) return false;
 
@@ -58,7 +58,7 @@ public:
 
         MsgPack::arr_size_t resp_size;
         int resp_type;
-        int resp_id;
+        uint32_t resp_id;
 
         if (!unpacker.deserialize(resp_size, resp_type, resp_id)) return false;
         if (resp_size.size() != RESPONSE_SIZE) return false;
@@ -157,7 +157,7 @@ private:
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
-    int _msg_id = 0;
+    uint32_t _msg_id = 0;
 
     inline bool buffer_full() const { return _bytes_stored == BufferSize; }
 
