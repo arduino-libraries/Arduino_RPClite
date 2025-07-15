@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef ARDUINO_RPCLITE_H
 #define ARDUINO_RPCLITE_H
 

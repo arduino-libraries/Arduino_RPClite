@@ -8,12 +8,56 @@
 namespace RpcUtils {
 namespace detail {
 
+#define WRONG_MSG       -2
+#define NO_MSG          -1
+#define CALL_MSG        0
+#define RESP_MSG        1
+#define NOTIFY_MSG      2
+
+#define REQUEST_SIZE    4
+#define RESPONSE_SIZE   4
+#define NOTIFY_SIZE     3
 
 ///////////////////////////////////////
 /// --- deserialization helpers --- ///
 ///////////////////////////////////////
 
 inline bool unpackObject(MsgPack::Unpacker& unpacker);
+
+
+inline bool unpackTypedArray(MsgPack::Unpacker& unpacker, size_t& size, int& type) {
+
+    if (!unpacker.isArray()) {
+        return false; // Not an array
+    }
+
+    MsgPack::arr_size_t sz;
+    unpacker.deserialize(sz);
+    int rpc_type;
+
+    size = 0;
+    for (size_t i=0; i<sz.size(); i++){
+        if ((i==0)) {
+            if (unpacker.isInt() || unpacker.isUInt()) {
+                unpacker.deserialize(rpc_type);
+                type = rpc_type;
+                size++;
+                continue; // First element must be the type
+            } else {
+                type = WRONG_MSG; // Not a valid type
+            }
+        }
+
+        if (unpackObject(unpacker)){
+            size++;
+        } else {
+            return false;
+        }
+    }
+
+    return true;
+
+}
 
 inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
 
@@ -132,11 +176,6 @@ inline typename std::enable_if<I < sizeof...(Ts), bool>::type
 deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
     if (!deserialize_single(unpacker, std::get<I>(out))) return false;
     return deserialize_tuple<I + 1>(unpacker, out);
-}
-
-template<typename... Ts>
-inline bool deserialize_all(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& values) {
-    return deserialize_tuple(unpacker, values);
 }
 
 // Helper to invoke a function with a tuple of arguments

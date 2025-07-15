@@ -1,11 +1,5 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef RPCLITE_TRANSPORT_H
 #define RPCLITE_TRANSPORT_H
-
-#include <Arduino.h>
 
 class ITransport {
 // Transport abstraction interface

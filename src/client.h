@@ -1,7 +1,3 @@
-//
-// Created by lucio on 4/8/25.
-//
-
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
 #include "error.h"
@@ -11,16 +7,18 @@
 
 class RPCClient {
     RpcDecoder<>* decoder = nullptr;
+    int _waiting_msg_id;
 
 public:
     RpcError lastError;
 
     RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
-    RPCClient(Stream& stream) {
-        ITransport* transport = (ITransport*) new SerialTransport(stream);
-        decoder = &RpcDecoderManager<>::getDecoder(*transport);
-    }
+    // This constructor was removed because it leads to decoder duplication
+    // RPCClient(Stream& stream) {
+    //     ITransport* transport = (ITransport*) new SerialTransport(stream);
+    //     decoder = &RpcDecoderManager<>::getDecoder(*transport);
+    // }
 
     template<typename... Args>
     void notify(const MsgPack::str_t method, Args&&... args)  {
@@ -31,23 +29,44 @@ public:
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
 
-        int msg_id;
-        if (!decoder->send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)){
+        if(!send_rpc(method, std::forward<Args>(args)...)) {
+            lastError.code = GENERIC_ERR;
+            lastError.traceback = "Failed to send RPC call";
+            return false;
         }
 
-        RpcError error;
         // blocking call
-        while (!decoder->get_response(msg_id, result, error)){
-            decoder->decode();
+        while (!get_response(result)){
             //delay(1);
         }
 
-        lastError.code = error.code;
-        lastError.traceback = error.traceback;
-
-        return (error.code == NO_ERR);
+        return (lastError.code == NO_ERR);
 
     }
+
+    template<typename... Args>
+    bool send_rpc(const MsgPack::str_t method, Args&&... args) {
+        int msg_id;
+        if (decoder->send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)) {
+            _waiting_msg_id = msg_id;
+            return true;
+        }
+        return false;
+    }
+
+    template<typename RType>
+    bool get_response(RType& result) {
+        RpcError tmp_error;
+        decoder->decode();
+
+        if (decoder->get_response(_waiting_msg_id, result, tmp_error)) {
+            lastError.code = tmp_error.code;
+            lastError.traceback = tmp_error.traceback;
+            return true;
+        }
+        return false;
+    }
+
 };
 
 #endif //RPCLITE_CLIENT_H

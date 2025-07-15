@@ -80,7 +80,7 @@ private:
     handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         //unpacker not ready if deserialization fails at this point
         std::tuple<Args...> args;
-        if (!deserialize_all<Args...>(unpacker, args)) return false;
+        if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
         invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, nil);
@@ -92,7 +92,7 @@ private:
     handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         //unpacker not ready if deserialization fails at this point
         std::tuple<Args...> args;
-        if (!deserialize_all<Args...>(unpacker, args)) return false;
+        if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
         R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, out);

@@ -1,14 +1,16 @@
 #include <Arduino_RPClite.h>
 
-RPCClient client(Serial1);
+SerialTransport transport(Serial1);
+RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);
     while(!Serial1);
 
     pinMode(LED_BUILTIN, OUTPUT);
-    
-    Serial.begin(9600);
+    delay(10);
+
+    Serial.begin(115200);
     while(!Serial);
 }
 
@@ -30,7 +32,7 @@ void blink_before(){
 void loop() {
     float result;
     blink_before();
-    
+
     String str_res;
     bool ok = client.call("loopback", str_res, "Sending a greeting");
     Serial.println(str_res);
@@ -75,5 +77,4 @@ void loop() {
         Serial.println("Server could not handle a notification as a call");
     }
 
-    delay(2000);
 }

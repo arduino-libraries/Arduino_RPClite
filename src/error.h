@@ -1,6 +1,3 @@
-// Created by lucio on 4/25/25.
-//
-
 #ifndef RPCLITE_ERROR_H
 #define RPCLITE_ERROR_H
 

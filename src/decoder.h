@@ -3,19 +3,11 @@
 
 #include "MsgPack.h"
 #include "transport.h"
-#include "dispatcher.h"
 #include "rpclite_utils.h"
 
 using namespace RpcUtils::detail;
 
-#define NO_MSG          -1
-#define CALL_MSG        0
-#define RESP_MSG        1
-#define NOTIFY_MSG      2
-
-#define REQUEST_SIZE    4
-#define RESPONSE_SIZE   4
-#define NOTIFY_SIZE     3
+#define MIN_RPC_BYTES   4
 
 #define MAX_BUFFER_SIZE 1024
 #define CHUNK_SIZE      32
@@ -56,118 +48,47 @@ public:
     template<typename RType>
     bool get_response(const int msg_id, RType& result, RpcError& error) {
 
-        if (!packet_incoming() || packet_type()!=RESP_MSG) return false;
+        if (!packet_incoming() || _packet_type!=RESP_MSG) return false;
 
         MsgPack::Unpacker unpacker;
+        unpacker.clear();
 
-        size_t bytes_checked = 0;
+        size_t res_size = get_packet_size();
+        if (!unpacker.feed(_raw_buffer, res_size)) return false;
 
-        while (bytes_checked < _bytes_stored) {
-            bytes_checked++;
-            unpacker.clear();
-            if (!unpacker.feed(_raw_buffer, bytes_checked)) continue;
-            MsgPack::arr_size_t resp_size;
-            int resp_type;
-            int resp_id;
-            if (!unpacker.deserialize(resp_size, resp_type, resp_id)) continue;
-            if (resp_size.size() != RESPONSE_SIZE) continue;
-            if (resp_type != RESP_MSG) continue;
-            if (resp_id != msg_id) continue;
+        MsgPack::arr_size_t resp_size;
+        int resp_type;
+        int resp_id;
 
-            MsgPack::object::nil_t nil;
-            if (unpacker.unpackable(nil)){  // No error
-                if (!unpacker.deserialize(nil, result)) continue;
-            } else {                        // RPC returned an error
-                if (!unpacker.deserialize(error, nil)) continue;
-            }
-            consume(bytes_checked);
-            return true;
-        }
-        return false;
-    }
+        if (!unpacker.deserialize(resp_size, resp_type, resp_id)) return false;
+        if (resp_size.size() != RESPONSE_SIZE) return false;
+        if (resp_type != RESP_MSG) return false;
+        if (resp_id != msg_id) return false;
 
-    template<typename RType>
-    bool send_response(const int msg_id, const RpcError& error, const RType& result) {
-        MsgPack::Packer packer;
-        MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
         MsgPack::object::nil_t nil;
-
-        packer.clear();
-        packer.serialize(resp_size, RESP_MSG, msg_id);
-
-        if (error.code == NO_ERR){
-            packer.serialize(nil, result);
-        } else {
-            packer.serialize(error, nil);
+        if (unpacker.unpackable(nil)){  // No error
+            if (!unpacker.deserialize(nil, result)) return false;
+        } else {                        // RPC returned an error
+            if (!unpacker.deserialize(error, nil)) return false;
         }
 
-        return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+        reset_packet();
+        consume(res_size);
+        return true;
 
     }
 
-    template<size_t N>
-    void process_requests(RpcFunctionDispatcher<N>& dispatcher) {
-        if (_packet_type!=CALL_MSG && _packet_type!=NOTIFY_MSG) return;
+    bool send_response(const MsgPack::Packer& packer) {
+        return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
+    }
 
-        MsgPack::Unpacker unpacker;
-        MsgPack::Packer packer;
+    size_t get_request(uint8_t* buffer, size_t buffer_size) {
 
-        size_t bytes_checked = 0;
-
-        while (bytes_checked < _bytes_stored) {
-            bytes_checked++;
-            unpacker.clear();
-            if (!unpacker.feed(_raw_buffer, bytes_checked)) continue;
-
-            int msg_type;
-            int msg_id;
-            MsgPack::str_t method;
-            MsgPack::arr_size_t req_size;
-
-            if (!unpacker.deserialize(req_size, msg_type)) continue;
-            // todo HANDLE MALFORMED CLIENT REQ ERRORS
-            if ((req_size.size() == REQUEST_SIZE) && (msg_type == CALL_MSG)){
-                if (!unpacker.deserialize(msg_id, method)) continue;
-                if (unpacker.size() < REQUEST_SIZE + 1) continue;                       // there must be at least 5 indices
-            } else if ((req_size.size() == NOTIFY_SIZE) && (msg_type == NOTIFY_MSG)) {
-                if (!unpacker.deserialize(method)) continue;
-                if (unpacker.size() < NOTIFY_SIZE + 1) continue;                        // there must be at least 4 indices
-            } else if ((req_size.size() == RESPONSE_SIZE) && (msg_type == RESP_MSG)) {  // this should never happen but it's addressed to a client
-                break;
-            } else {
-                discard_packet();
-                break;
-            }
-            // Headers unpacked
-
-            MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
-            packer.clear();
-            if (msg_type == CALL_MSG) packer.serialize(resp_size, RESP_MSG, msg_id);
-            size_t headers_size = packer.size();
-
-            if (!dispatcher.call(method, unpacker, packer)) {
-                if (packer.size()==headers_size) {
-                    // Call didn't go through bc parameters are not ready yet
-                    continue;
-                } else {
-                    // something went wrong the call raised an error or the client issued a malformed request
-                    if (msg_type == CALL_MSG) {
-                        send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size());
-                    }   // if notification client will never know something went wrong
-                    discard_packet();   // agnostic pop
-                    break;
-                }
-            } else {
-                // all is well we can respond and pop the deserialized packet
-                if (msg_type == CALL_MSG){
-                    send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size());
-                }
-                consume(bytes_checked);
-                break;
-            }
-
+        if (_packet_type != CALL_MSG && _packet_type != NOTIFY_MSG) {
+            return 0; // No RPC
         }
 
+        return pop_packet(buffer, buffer_size);
     }
 
     void decode(){
@@ -187,30 +108,11 @@ public:
 
     void parse_packet(){
 
-        if (packet_incoming() || _bytes_stored < 2){return;}
-
-        MsgPack::Unpacker unpacker;
-        unpacker.clear();
-        unpacker.feed(_raw_buffer, 2);
-
-        MsgPack::arr_size_t elem_size;
-        int type;
-        if (unpacker.deserialize(elem_size, type)){
-            _packet_type = type;
-        }
-
-    }
-
-    // Check if a packet is available
-    inline bool packet_incoming() const { return _packet_type >= CALL_MSG; }
-
-    int packet_type() const {return _packet_type;}
-
-    // Get the size of the next packet in the buffer (must be array contained, no other requirements)
-    size_t get_packet_size() {
+        if (packet_incoming()){return;}
 
         size_t bytes_checked = 0;
         size_t container_size;
+        int type;
         MsgPack::Unpacker unpacker;
 
         while (bytes_checked < _bytes_stored){
@@ -218,21 +120,34 @@ public:
             unpacker.clear();
             if (!unpacker.feed(_raw_buffer, bytes_checked)) continue;
 
-            if (unpackArray(unpacker, container_size)) {
-                return bytes_checked;
+            if (unpackTypedArray(unpacker, container_size, type)) {
+
+                if (type != CALL_MSG && type != RESP_MSG && type != NOTIFY_MSG) {
+                    consume(bytes_checked);
+                    break; // Not a valid RPC type (could be type=WRONG_MSG)
+                }
+
+                if ((type == CALL_MSG && container_size != REQUEST_SIZE) || (type == RESP_MSG && container_size != RESPONSE_SIZE) || (type == NOTIFY_MSG && container_size != NOTIFY_SIZE)) {
+                    consume(bytes_checked);
+                    break; // Not a valid RPC format
+                }
+
+                _packet_type = type;
+                _packet_size = bytes_checked;
+                break;
             } else {
                 continue;
             }
 
         }
 
-        return 0;
     }
 
-    // Discard the next (array) packet in the buffer, returns the number of bytes consumed.
-    size_t discard_packet() {
-        return consume(get_packet_size());
-    }
+    inline bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
+
+    inline int packet_type() const { return _packet_type; }
+
+    size_t get_packet_size() const { return _packet_size;}
 
     inline size_t size() const {return _bytes_stored;}
 
@@ -241,6 +156,7 @@ private:
     uint8_t _raw_buffer[BufferSize];
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
+    size_t _packet_size = 0;
     int _msg_id = 0;
 
     inline bool buffer_full() const { return _bytes_stored == BufferSize; }
@@ -251,7 +167,27 @@ private:
         return _transport.write(data, size);
     }
 
-    // Consume the first 'size' bytes of the buffer, shifting remaining data forward
+    size_t pop_packet(uint8_t* buffer, size_t buffer_size) {
+
+        if (!packet_incoming()) return 0;
+
+        size_t packet_size = get_packet_size();
+        if (packet_size > buffer_size) return 0;
+
+        for (size_t i = 0; i < packet_size; i++) {
+            buffer[i] = _raw_buffer[i];
+        }
+
+        reset_packet();
+        return consume(packet_size);
+    }
+
+
+    void reset_packet() {
+        _packet_type = NO_MSG;
+        _packet_size = 0;
+    }
+
     size_t consume(size_t size) {
 
         if (size > _bytes_stored) return 0;
@@ -264,7 +200,6 @@ private:
         }
 
         _bytes_stored = remaining_bytes;
-        _packet_type = NO_MSG;
 
         return size;
     }

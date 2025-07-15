@@ -1,8 +1,13 @@
 #include <Arduino_RPClite.h>
 
-RPCServer server(Serial1);
+SerialTransport transport(Serial1);
+RPCServer server(transport);
 
 int add(int a, int b){
+    return a+b;
+}
+
+int add2(int a, int b){
     return a+b;
 }
 
@@ -24,6 +29,10 @@ public:
 };
 
 
+float multip(float a, float b) {
+    return a*b;
+}
+
 void setup() {
     Serial1.begin(115200);
     while(!Serial1);
@@ -34,10 +43,16 @@ void setup() {
     while(!Serial);
 
     server.bind("add", add);
+
+    if (!server.bind("add", add2)){
+        Serial.println("server refused to bind same name twice");
+    }
+
     server.bind("greet", greet);
     server.bind("loopback", loopback);
     server.bind("another_greeting", [] {return MsgPack::str_t ("This is a lambda greeting");});
     server.bind("object_multi", &multiplier::mult);
+    server.bind("multip", multip);
 
 }
 
