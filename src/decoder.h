@@ -82,7 +82,7 @@ public:
         return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
     }
 
-    MsgPack::str_t fetch_method(){
+    MsgPack::str_t fetch_rpc_method(){
 
         if (!packet_incoming()){return "";}
 

@@ -33,77 +33,49 @@ public:
 
     void run() {
 
-        RPCRequest req;
-        if (get_rpc(req)) {         // Populate local request
-            process_request(req);   // Process local data
-            send_response(req);     // Send from local data
-        }
+        RPCRequest<> req;
+
+        if (!get_rpc(req)) return; // Populate local request
+
+        process_request(req);   // Process local data
+
+        send_response(req);     // Send from local data
 
     }
 
-    bool get_rpc(RPCRequest& req, MsgPack::str_t tag="") {
+    bool get_rpc(RPCRequest<>& req, MsgPack::str_t tag="") {
         decoder->decode();
 
-        MsgPack::str_t method = decoder->fetch_method();
+        MsgPack::str_t method = decoder->fetch_rpc_method();
 
         if (method == "" || !hasTag(method, tag)) return false;
 
-        req.size = decoder->get_request(req.buffer, RPC_BUFFER_SIZE);   // todo overload get_request(RPCRequest& req) so all the request info is in req
+        req.size = decoder->get_request(req.buffer, req.get_buffer_size());   // todo overload get_request(RPCRequest& req) so all the request info is in req
         return req.size > 0;
     }
 
-    void process_request(RPCRequest& req) {
-        if (req.size == 0) return;
+    void process_request(RPCRequest<>& req) {
 
-        MsgPack::Unpacker unpacker;
-
-        unpacker.clear();
-        if (!unpacker.feed(req.buffer, req.size)) return;
-
-        int msg_type;
-        uint32_t msg_id;
-        MsgPack::str_t method;
-        MsgPack::arr_size_t req_size;
-
-        if (!unpacker.deserialize(req_size, msg_type)) {
+        if (!req.unpack_request_headers()) {
             req.reset();
-            return; // Header not unpackable
+            return;
         }
 
-        if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
-            if (!unpacker.deserialize(msg_id, method)) {
-                req.reset();
-                return; // Method not unpackable
-            }
-        } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
-            if (!unpacker.deserialize(method)) {
-                req.reset();
-                return; // Method not unpackable
-            }
-        } else {
-            req.reset();
-            return; // Invalid request size/type
-        }
+        req.pack_response_headers();
 
-        req.type = msg_type;
-
-        MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
-        req.res_packer.clear();
-        if (msg_type == CALL_MSG) req.res_packer.serialize(resp_size, RESP_MSG, msg_id);
-
-        dispatcher.call(method, unpacker, req.res_packer);
+        dispatcher.call(req.method, req.unpacker, req.packer);
 
     }
 
-    bool send_response(RPCRequest& req) {
+    bool send_response(RPCRequest<>& req) {
 
-        if (req.type == NO_MSG || req.res_packer.size() == 0) {
+        if (req.type == NO_MSG || req.packer.size() == 0) {
             return true; // No response to send
         }
 
         if (req.type == NOTIFY_MSG) return true;
 
-        return decoder->send_response(req.res_packer);
+        return decoder->send_response(req.packer);
 
     }
 
