@@ -33,6 +33,7 @@ set(TEST_TARGET ${CMAKE_PROJECT_NAME})
 
 set(TEST_SRCS
   src/RPC/test_RPCClient.cpp
+  src/RPC/utils.cpp
 )
 
 set(TEST_DUT_SRCS
