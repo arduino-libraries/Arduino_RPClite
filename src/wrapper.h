@@ -10,15 +10,14 @@ using namespace RpcUtils::detail;
 #include <stdexcept>
 #endif
 
+class IFunctionWrapper {
+public:
+    virtual ~IFunctionWrapper() {}
+    virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
+};
 
 template<typename F>
 class RpcFunctionWrapper;
-
-class IFunctionWrapper {
-    public:
-        virtual ~IFunctionWrapper() {}
-        virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
-    };
 
 template<typename R, typename... Args>
 class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
