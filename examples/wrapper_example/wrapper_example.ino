@@ -55,9 +55,9 @@ void loop() {
     out_packer.clear();
 
     blink_before();
-    int out = wrapped_add(5, 3);
+    int out = (*wrapped_add)(5, 3);
 
-    bool unpack_ok = wrapped_add(unpacker, out_packer);
+    bool unpack_ok = (*wrapped_add)(unpacker, out_packer);
 
     Serial.print("simple call: ");
     Serial.println(out);
@@ -82,7 +82,7 @@ void loop() {
     unpacker.feed(packer.data(), packer.size());
     out_packer.clear();
 
-    bool should_be_false = wrapped_divide(unpacker, out_packer);
+    bool should_be_false = (*wrapped_divide)(unpacker, out_packer);
 
     if (!should_be_false){
         Serial.println("RPC error call divide by zero ");
@@ -103,7 +103,7 @@ void loop() {
     unpacker.clear();
     unpacker.feed(packer.data(), packer.size());
     out_packer.clear();
-    wrapped_hello(unpacker, out_packer);
+    (*wrapped_hello)(unpacker, out_packer);
 
     for (size_t i=0; i<out_packer.size(); i++){
         Serial.print(out_packer.data()[i], HEX);

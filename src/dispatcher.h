@@ -19,9 +19,7 @@ public:
 
         if (isBound(name)) return false;
 
-        using WrapperT = decltype(wrap(std::forward<F>(f)));
-        WrapperT* instance = new WrapperT(wrap(std::forward<F>(f)));
-        _entries[_count++] = {name, tag, instance};
+        _entries[_count++] = {name, tag, wrap(std::forward<F>(f))};
         return true;
     }
 
