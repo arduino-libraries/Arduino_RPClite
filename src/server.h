@@ -35,13 +35,11 @@ public:
         get_rpc();
         process_request();
         send_response();
-        //delay(1);
     }
 
     bool get_rpc() {
         decoder->decode();
         if (_rpc_size > 0) return true; // Already have a request
-        // TODO USE A QUEUE
         _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
         return _rpc_size > 0;
     }
