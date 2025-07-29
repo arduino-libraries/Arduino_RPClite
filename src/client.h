@@ -37,7 +37,6 @@ public:
 
         // blocking call
         while (!get_response(result)){
-            //delay(1);
         }
 
         return (lastError.code == NO_ERR);
