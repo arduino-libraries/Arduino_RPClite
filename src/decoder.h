@@ -215,8 +215,17 @@ private:
 
     inline bool buffer_empty() const { return _bytes_stored == 0;}
 
+    // This is a blocking send, under the assumption _transport.write will always succeed eventually
     inline size_t send(const uint8_t* data, const size_t size) {
-        return _transport.write(data, size);
+
+        size_t offset = 0;
+
+        while (offset < size) {
+            size_t bytes_written = _transport.write(data + offset, size - offset);
+            offset += bytes_written;
+        }
+
+        return offset;
     }
 
     size_t pop_packet(uint8_t* buffer, size_t buffer_size) {
