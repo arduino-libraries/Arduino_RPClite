@@ -57,7 +57,7 @@ public:
     }
 
     template<typename RType>
-    bool get_response(const int msg_id, RType& result, RpcError& error) {
+    bool get_response(const uint32_t msg_id, RType& result, RpcError& error) {
 
         if (!packet_incoming() || _packet_type!=RESP_MSG) return false;
 
@@ -111,7 +111,7 @@ public:
         };
 
         int msg_type;
-        int msg_id;
+        uint32_t msg_id;
         MsgPack::str_t method;
         MsgPack::arr_size_t req_size;
 
