@@ -10,15 +10,14 @@ using namespace RpcUtils::detail;
 #include <stdexcept>
 #endif
 
+class IFunctionWrapper {
+public:
+    virtual ~IFunctionWrapper() {}
+    virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
+};
 
 template<typename F>
 class RpcFunctionWrapper;
-
-class IFunctionWrapper {
-    public:
-        virtual ~IFunctionWrapper() {}
-        virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
-    };
 
 template<typename R, typename... Args>
 class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
@@ -100,11 +99,9 @@ private:
     }
 };
 
-
-template<typename F>
-auto wrap(F&& f) -> RpcFunctionWrapper<typename arx::function_traits<typename std::decay<F>::type>::function_type> {
-    using Signature = typename arx::function_traits<typename std::decay<F>::type>::function_type;
-    return RpcFunctionWrapper<Signature>(std::forward<F>(f));
+template<typename F, typename Signature = typename arx::function_traits<typename std::decay<F>::type>::function_type>
+auto wrap(F&& f) -> RpcFunctionWrapper<Signature>* {
+    return new RpcFunctionWrapper<Signature>(std::forward<F>(f));
 };
 
 #endif
