@@ -21,7 +21,7 @@ class SerialTransport: public ITransport {
         size_t write(const uint8_t* data, size_t size) override {
             _stream->write(data, size);
             return size;
-        }   
+        }
 
         size_t read(uint8_t* buffer, size_t size) override {
             _stream->setTimeout(0);
