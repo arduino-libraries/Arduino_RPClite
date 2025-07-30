@@ -24,7 +24,6 @@
 #endif  // TEENSYDUINO
 
 #include "Types.h"
-#include <DebugLog.h>
 
 namespace arduino {
 namespace msgpack {
@@ -38,7 +37,6 @@ namespace msgpack {
 
 #define MSGPACK_DECODABLE_CHECK(T)                 \
     if (curr_index >= indices.size()) {            \
-        LOG_ERROR(F("no more decodable objects")); \
         b_decode_success = false;                  \
         return T();                                \
     } else {                                       \
@@ -55,19 +53,16 @@ namespace msgpack {
             for (size_t i = 0; i < size; i += getElementSize(indices.size() - 1)) indices.emplace_back(i);
             const size_t decoded_size = indices.back() + getElementSize(indices.size() - 1);
             b_size_matched = (size == decoded_size);
-            if (!b_size_matched) LOG_ERROR(F("decoded binary size"), decoded_size, F("not matched to"), size);
             return b_size_matched;
         }
 
         template <typename First, typename... Rest>
         bool deserialize(First& first, Rest&&... rest) {
             if (!b_size_matched || indices.empty()) {
-                LOG_WARN(F("correct binary data was not supplied yet"));
                 b_decode_success = false;
                 return b_decode_success;
             }
             if (curr_index >= indices.size()) {
-                LOG_ERROR(F("too many args: obj index overflow"));
                 b_decode_success = false;
                 return b_decode_success;
             }
@@ -80,7 +75,6 @@ namespace msgpack {
 
         bool deserialize() {
             if (curr_index > indices.size()) {
-                LOG_ERROR("index overflow:", curr_index, "must be <=", indices.size());
                 b_decode_success = false;
             }
 
@@ -97,7 +91,6 @@ namespace msgpack {
         bool deserialize_arduinojson(JsonDocument& doc) {
             auto err = deserializeMsgPack(doc, raw_data);
             if (err) {
-                LOG_ERROR("deserializeJson() faled: ", err.c_str());
                 b_decode_success = false;
             } else {
                 b_decode_success = true;
@@ -128,7 +121,6 @@ namespace msgpack {
                 static map_size_t sz;
                 return deserialize(sz, std::forward<Args>(args)...);
             } else {
-                LOG_ERROR(F("arg size must be even for map:"), sizeof...(args));
                 b_decode_success = false;
                 return b_decode_success;
             }
@@ -309,7 +301,6 @@ namespace msgpack {
             if (N == size)
                 for (auto& a : arr) unpack(a);
             else {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), N);
                 b_decode_success = false;
             }
             return b_decode_success;
@@ -329,7 +320,6 @@ namespace msgpack {
                 unpack(arr.first);
                 unpack(arr.second);
             } else {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), 2);
                 b_decode_success = false;
             }
             return b_decode_success;
@@ -341,7 +331,6 @@ namespace msgpack {
             if (sizeof...(Args) == size) {
                 to_tuple(t);
             } else {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), sizeof...(Args));
                 b_decode_success = false;
             }
             return b_decode_success;
@@ -358,7 +347,6 @@ namespace msgpack {
             const size_t arr_size = std::distance(arr.begin(), arr.end());
             const size_t size = unpackArraySize();
             if (size == 0) {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), arr_size);
                 b_decode_success = false;
             } else if (arr_size == size)
                 for (auto& a : arr) unpack(a);
@@ -492,7 +480,6 @@ namespace msgpack {
                 case Type::UINT64:
                     return (T)unpackUInt64();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<T>();
             }
         }
@@ -525,7 +512,6 @@ namespace msgpack {
                 case Type::UINT64:
                     return uint_to_int<T, uint64_t, int64_t>(unpackUInt64());
                 default:
-                    LOG_ERROR("type error");
                     return type_error<T>();
             }
         }
@@ -562,7 +548,6 @@ namespace msgpack {
                 case Type::FLOAT64:
                     return (T)unpackFloat64();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<T>();
             }
         }
@@ -581,7 +566,6 @@ namespace msgpack {
                 case Type::STR32:
                     return unpackStringUnchecked32();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<str_t>();
             }
         }
@@ -600,7 +584,6 @@ namespace msgpack {
                 case Type::BIN32:
                     return unpackBinaryUnchecked32<T>();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<bin_t<T>>();
             }
         }
@@ -620,7 +603,6 @@ namespace msgpack {
                 case Type::BIN32:
                     return unpackBinaryUnchecked32<T, N>();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<std::array<T, N>>();
             }
         }
@@ -639,7 +621,6 @@ namespace msgpack {
                 case Type::ARRAY32:
                     return unpackArraySizeUnchecked32();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<size_t>();
             }
         }
@@ -656,7 +637,6 @@ namespace msgpack {
                 case Type::MAP32:
                     return unpackMapSizeUnchecked32();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<size_t>();
             }
         }
@@ -683,7 +663,6 @@ namespace msgpack {
                 case Type::EXT32:
                     return unpackExtUnchecked32();
                 default:
-                    LOG_ERROR("type error");
                     return type_error<object::ext>();
             }
         }
@@ -701,7 +680,6 @@ namespace msgpack {
             else if (isTimestamp96())
                 return unpackTimestampUnchecked96();
             else {
-                LOG_ERROR("type error");
                 return type_error<object::timespec>();
             }
         }
@@ -1792,7 +1770,6 @@ namespace msgpack {
         template <typename DataType>
         DataType getRawBytes(const size_t idx, const size_t offset) const {
             if (idx >= indices.size()) {
-                LOG_ERROR(F("index overrun: idx"), idx, F("must be <"), indices.size());
                 return DataType();
             }
             DataType data;
@@ -1807,7 +1784,6 @@ namespace msgpack {
 
         uint8_t* getRawBytePtr(const size_t idx, const size_t offset) const {
             if (idx >= indices.size()) {
-                LOG_ERROR(F("index overrun: idx"), idx, F("must be <"), indices.size());
                 return nullptr;
             }
             auto index = indices[idx] + offset;
@@ -1816,7 +1792,6 @@ namespace msgpack {
 
         Type getType(const size_t idx) const {
             if (idx >= indices.size()) {
-                LOG_ERROR(F("index overrun: idx"), idx, F("must be <"), indices.size());
                 return Type::NA;
             }
 
@@ -1898,23 +1873,12 @@ namespace msgpack {
                 case Type::EXT32:
                     return (size_t)getRawBytes<uint32_t>(i, 1) + sizeof(uint32_t) + 1 + 1;
                 default:
-                    LOG_ERROR(F("undefined type:"), (int)type);
                     return 0;
             }
         }
 
         template <typename T>
         T type_error(const Type type = Type::NA) {
-            if (type == Type::NA)
-                LOG_ERROR(F("unknown type in index"), curr_index, F(": type byte"), (int)getType());
-            else
-                LOG_ERROR(
-                    F("unpack type mimatch in index"),
-                    curr_index,
-                    F(": type byte"),
-                    (int)getType(),
-                    F("must be"),
-                    (int)type);
             b_decode_success = false;
             ++curr_index;
             return T();
@@ -1941,7 +1905,6 @@ namespace msgpack {
         {
             const size_t size = unpackArraySize();
             if (size == 0) {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), arr.size());
                 b_decode_success = false;
             } else if (arr.size() == size)
                 for (auto& a : arr) unpack(a);
@@ -1964,7 +1927,6 @@ namespace msgpack {
         {
             const size_t size = unpackArraySize();
             if (size == 0) {
-                LOG_ERROR(F("array size mismatch:"), size, F("must be"), arr.size());
                 b_decode_success = false;
             } else {
                 arr.clear();
@@ -1985,7 +1947,6 @@ namespace msgpack {
 #endif  // Do not have libstdc++11
             const size_t size = unpackMapSize();
             if (size == 0) {
-                LOG_ERROR(F("map size mismatch:"), size, F("must be"), mp.size());
                 b_decode_success = false;
             } else {
                 mp.clear();

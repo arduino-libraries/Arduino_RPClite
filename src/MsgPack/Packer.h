@@ -26,7 +26,6 @@
 
 #include "Types.h"
 #include "Unpacker.h"
-#include <DebugLog.h>
 
 namespace arduino {
 namespace msgpack {
@@ -101,8 +100,6 @@ namespace msgpack {
             size_t size = sizeof...(args);
             if ((size % 2) == 0)
                 serialize(map_size_t(size / 2), std::forward<Args>(args)...);
-            else
-                LOG_ERROR(F("serialize arg size must be even for map:"), size);
         }
 
         const bin_t<uint8_t>& packet() const {
