@@ -1,6 +1,18 @@
+/*
+    This file is part of the Arduino_RPClite library.
+
+    Copyright (c) 2025 Arduino SA
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    
+*/
+
 #ifndef RPCLITE_SERVER_H
 #define RPCLITE_SERVER_H
 
+#include "request.h"
 #include "error.h"
 #include "wrapper.h"
 #include "dispatcher.h"
@@ -9,7 +21,6 @@
 #include "SerialTransport.h"
 
 #define MAX_CALLBACKS   100
-#define RPC_BUFFER_SIZE  1024
 
 class RPCServer {
 
@@ -32,95 +43,57 @@ public:
     }
 
     void run() {
-        get_rpc();
-        process_request();
-        send_response();
+
+        RPCRequest<> req;
+
+        if (!get_rpc(req)) return; // Populate local request
+
+        process_request(req);   // Process local data
+
+        send_response(req);     // Send from local data
+
     }
 
-    bool get_rpc() {
+    bool get_rpc(RPCRequest<>& req, MsgPack::str_t tag="") {
         decoder->decode();
-        if (_rpc_size > 0) return true; // Already have a request
-        _rpc_size = decoder->get_request(_rpc_buffer, RPC_BUFFER_SIZE);
-        return _rpc_size > 0;
+
+        MsgPack::str_t method = decoder->fetch_rpc_method();
+
+        if (method == "" || !hasTag(method, tag)) return false;
+
+        req.size = decoder->get_request(req.buffer, req.get_buffer_size());   // todo overload get_request(RPCRequest& req) so all the request info is in req
+        return req.size > 0;
     }
 
-    void process_request(MsgPack::str_t tag="") {
-        if (_rpc_size == 0) return;
+    void process_request(RPCRequest<>& req) {
 
-        MsgPack::Unpacker unpacker;
-
-        unpacker.clear();
-        if (!unpacker.feed(_rpc_buffer, _rpc_size)) {
-            _rpc_size = 0; // Reset size on error
-            return; // Error in unpacking
+        if (!req.unpack_request_headers()) {
+            req.reset();
+            return;
         }
 
-        int msg_type;
-        uint32_t msg_id;
-        MsgPack::str_t method;
-        MsgPack::arr_size_t req_size;
+        req.pack_response_headers();
 
-        if (!unpacker.deserialize(req_size, msg_type)) {
-            reset_rpc();
-            return; // Header not unpackable
-        }
-
-        if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
-            if (!unpacker.deserialize(msg_id, method)) {
-                reset_rpc();
-                return; // Method not unpackable
-            }
-        } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
-            if (!unpacker.deserialize(method)) {
-                reset_rpc();
-                return; // Method not unpackable
-            }
-        } else {
-            reset_rpc();
-            return; // Invalid request size/type
-        }
-
-        if (!hasTag(method, tag)) return;
-
-        _rpc_type = msg_type;
-
-        MsgPack::arr_size_t resp_size(RESPONSE_SIZE);
-        res_packer.clear();
-        if (msg_type == CALL_MSG) res_packer.serialize(resp_size, RESP_MSG, msg_id);
-
-        dispatcher.call(method, unpacker, res_packer);
+        dispatcher.call(req.method, req.unpacker, req.packer);
 
     }
 
-    bool send_response() {
-        if (_rpc_type == NO_MSG || res_packer.size() == 0) {
+    bool send_response(RPCRequest<>& req) {
+
+        if (req.type == NO_MSG || req.packer.size() == 0) {
             return true; // No response to send
         }
 
-        if (_rpc_type == NOTIFY_MSG) {
-            reset_rpc();
-            return true;
-        }
+        if (req.type == NOTIFY_MSG) return true;
 
-        bool send_res = decoder->send_response(res_packer);
-        reset_rpc();
-        return send_res;
+        return decoder->send_response(req.packer);
 
     }
 
 private:
     RpcDecoder<>* decoder = nullptr;
     RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
-    uint8_t _rpc_buffer[RPC_BUFFER_SIZE];
-    size_t _rpc_size = 0;
-    int _rpc_type = NO_MSG;
-    MsgPack::Packer res_packer;
     
-    void reset_rpc() {
-        _rpc_size = 0;
-        _rpc_type = NO_MSG;
-    }
-
 };
 
 #endif //RPCLITE_SERVER_H

@@ -1,5 +1,17 @@
+/*
+    This file is part of the Arduino_RPClite library.
+
+    Copyright (c) 2025 Arduino SA
+
+    This Source Code Form is subject to the terms of the Mozilla Public
+    License, v. 2.0. If a copy of the MPL was not distributed with this
+    file, You can obtain one at http://mozilla.org/MPL/2.0/.
+    
+*/
+
 #include <Arduino_RPClite.h>
 #include "DummyTransport.h"
+#include "decoder_tester.h"
 
 // Shorthand
 MsgPack::Packer packer;
@@ -32,6 +44,35 @@ void runDecoderTest(const char* label) {
   size_t pack_size = decoder.get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
+
+  Serial.println("-- Done --\n");
+}
+
+void runDecoderConsumeTest(const char* label, size_t second_packet_sz) {
+  Serial.println(label);
+
+  print_buf();
+  DummyTransport dummy_transport(packer.data(), packer.size());
+  RpcDecoder<> decoder(dummy_transport);
+
+  DecoderTester dt(decoder);
+
+  while (!decoder.packet_incoming()) {
+    Serial.println("Packet not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  size_t pack_size = decoder.get_packet_size();
+  Serial.print("1st Packet size: ");
+  Serial.println(pack_size);
+
+  Serial.print("Consuming 2nd packet of given size: ");
+  Serial.println(second_packet_sz);
+
+  dt.crop_bytes(second_packet_sz, pack_size);
+
+  dt.print_raw_buf();
 
   Serial.println("-- Done --\n");
 }
@@ -120,6 +161,9 @@ void testMultipleRpcPackets() {
   packer.serialize(req_sz, 0, 2, "echo", par_sz, "Hello", true);
 
   runDecoderTest("== Test: Multiple RPCs in Buffer ==");
+
+  runDecoderConsumeTest("== Test: Mid-buffer consume ==", 5);
+
 }
 
 // Binary parameter (e.g., binary blob)
@@ -170,6 +214,8 @@ void testCombinedComplexBuffer() {
 
 void setup() {
   Serial.begin(115200);
+  while(!Serial);
+  
   delay(1000);
   Serial.println("=== RPC Decoder Nested Tests ===");
 
