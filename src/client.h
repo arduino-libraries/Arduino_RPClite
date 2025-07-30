@@ -7,7 +7,6 @@
 
 class RPCClient {
     RpcDecoder<>* decoder = nullptr;
-    uint32_t _waiting_msg_id;
 
 public:
     RpcError lastError;
@@ -29,14 +28,17 @@ public:
     template<typename RType, typename... Args>
     bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
 
-        if(!send_rpc(method, std::forward<Args>(args)...)) {
+        uint32_t msg_id_wait;
+
+        if(!send_rpc(method, msg_id_wait, std::forward<Args>(args)...)) {
             lastError.code = GENERIC_ERR;
             lastError.traceback = "Failed to send RPC call";
             return false;
         }
 
         // blocking call
-        while (!get_response(result)){
+        while (!get_response(msg_id_wait, result)){
+            //delay(1);
         }
 
         return (lastError.code == NO_ERR);
@@ -44,21 +46,21 @@ public:
     }
 
     template<typename... Args>
-    bool send_rpc(const MsgPack::str_t method, Args&&... args) {
+    bool send_rpc(const MsgPack::str_t method, uint32_t& wait_id, Args&&... args) {
         uint32_t msg_id;
         if (decoder->send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)) {
-            _waiting_msg_id = msg_id;
+            wait_id = msg_id;
             return true;
         }
         return false;
     }
 
     template<typename RType>
-    bool get_response(RType& result) {
+    bool get_response(const uint32_t wait_id, RType& result) {
         RpcError tmp_error;
         decoder->decode();
 
-        if (decoder->get_response(_waiting_msg_id, result, tmp_error)) {
+        if (decoder->get_response(wait_id, result, tmp_error)) {
             lastError.code = tmp_error.code;
             lastError.traceback = tmp_error.traceback;
             return true;
