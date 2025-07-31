@@ -260,17 +260,17 @@ namespace msgpack {
         MAP4 = 0x0F,  // same as FIXMAP
     };
 
-    template <typename ClassType, typename ArgType>
-    using has_to_msgpack_impl = typename std::enable_if<
-        std::is_same<decltype(&ClassType::to_msgpack), void (ClassType::*)(ArgType) const>::value>::type;
-    template <typename ClassType, typename ArgType>
-    using has_to_msgpack = arx::is_detected<has_to_msgpack_impl, ClassType, ArgType>;
+    // template <typename ClassType, typename ArgType>
+    // using has_to_msgpack_impl = typename std::enable_if<
+    //     std::is_same<decltype(&ClassType::to_msgpack), void (ClassType::*)(ArgType) const>::value>::type;
+    // template <typename ClassType, typename ArgType>
+    // using has_to_msgpack = arx::is_detected<has_to_msgpack_impl, ClassType, ArgType>;
 
-    template <typename ClassType, typename ArgType>
-    using has_from_msgpack_impl = typename std::enable_if<
-        std::is_same<decltype(&ClassType::from_msgpack), void (ClassType::*)(ArgType)>::value>::type;
-    template <typename ClassType, typename ArgType>
-    using has_from_msgpack = arx::is_detected<has_from_msgpack_impl, ClassType, ArgType>;
+    // template <typename ClassType, typename ArgType>
+    // using has_from_msgpack_impl = typename std::enable_if<
+    //     std::is_same<decltype(&ClassType::from_msgpack), void (ClassType::*)(ArgType)>::value>::type;
+    // template <typename ClassType, typename ArgType>
+    // using has_from_msgpack = arx::is_detected<has_from_msgpack_impl, ClassType, ArgType>;
 
 }  // namespace msgpack
 }  // namespace arduino
@@ -279,16 +279,16 @@ namespace msgpack {
     void to_msgpack(MsgPack::Packer& packer) const { \
         packer.to_array(__VA_ARGS__);                \
     }                                                \
-    void from_msgpack(MsgPack::Unpacker& unpacker) { \
-        unpacker.from_array(__VA_ARGS__);            \
+    bool from_msgpack(MsgPack::Unpacker& unpacker) { \
+        return unpacker.from_array(__VA_ARGS__);     \
     }
 
 #define MSGPACK_DEFINE_MAP(...)                      \
     void to_msgpack(MsgPack::Packer& packer) const { \
         packer.to_map(__VA_ARGS__);                  \
     }                                                \
-    void from_msgpack(MsgPack::Unpacker& unpacker) { \
-        unpacker.from_map(__VA_ARGS__);              \
+    bool from_msgpack(MsgPack::Unpacker& unpacker) { \
+        return unpacker.from_map(__VA_ARGS__);       \
     }
 
 #define MSGPACK_BASE(base) (*const_cast<base*>(static_cast<base const*>(this)))

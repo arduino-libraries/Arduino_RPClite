@@ -58,7 +58,7 @@ public:
         // First check the parameters size
         if (!unpacker.isArray()){
             RpcError error(MALFORMED_CALL_ERR, "Unserializable parameters array");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 
@@ -67,13 +67,13 @@ public:
         unpacker.deserialize(param_size);
         if (param_size.size() < sizeof...(Args)){
             RpcError error(MALFORMED_CALL_ERR, "Missing call parameters (WARNING: Default param resolution is not implemented)");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 
         if (param_size.size() > sizeof...(Args)){
             RpcError error(MALFORMED_CALL_ERR, "Too many parameters");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 

@@ -365,10 +365,10 @@ namespace msgpack {
 
         // ---------- CUSTOM format ----------
 
-        template <typename C>
-        auto pack(const C& c) -> typename std::enable_if<has_to_msgpack<C, Packer&>::value>::type {
-            c.to_msgpack(*this);
-        }
+        // template <typename C>
+        // auto pack(const C& c) -> typename std::enable_if<has_to_msgpack<C, Packer&>::value>::type {
+        //     c.to_msgpack(*this);
+        // }
 
         // ---------- Array/Map Size format ----------
 
