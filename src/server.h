@@ -52,7 +52,7 @@ public:
     bool get_rpc(RPCRequest<RpcSize>& req, MsgPack::str_t tag="") {
         decoder->decode();
 
-        MsgPack::str_t method = decoder->fetch_rpc_method();
+        const MsgPack::str_t method = decoder->fetch_rpc_method();
 
         if (method == "" || !dispatcher.hasTag(method, tag)) return false;
 
@@ -60,7 +60,8 @@ public:
         return req.size > 0;
     }
 
-    void process_request(RPCRequest<>& req) {
+    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    void process_request(RPCRequest<RpcSize>& req) {
 
         if (!req.unpack_request_headers()) {
             req.reset();
@@ -73,7 +74,8 @@ public:
 
     }
 
-    bool send_response(const RPCRequest<>& req) const {
+    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    bool send_response(const RPCRequest<RpcSize>& req) const {
 
         if (req.type == NO_MSG || req.packer.size() == 0) {
             return true; // No response to send
