@@ -22,8 +22,15 @@ static constexpr uint8_t INT5 = INT5_TEMP_VALUE;
 #define INT5 INT5
 #endif
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+#define ARX_HAVE_LIBSTDCPLUSPLUS 201103L
+#include <vector>
+#include <array>
+#include <map>
+#else
 #include <ArxTypeTraits.h>
 #include <ArxContainer.h>
+#endif
 
 namespace arduino {
 namespace msgpack {
