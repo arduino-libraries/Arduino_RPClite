@@ -13,31 +13,24 @@
 #define RPCLITE_CLIENT_H
 #include "error.h"
 #include "decoder_manager.h"
-#include "SerialTransport.h"
 
 
 class RPCClient {
-    RpcDecoder<>* decoder = nullptr;
+    RpcDecoder<>* decoder;
 
 public:
     RpcError lastError;
 
-    RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
-
-    // This constructor was removed because it leads to decoder duplication
-    // RPCClient(Stream& stream) {
-    //     ITransport* transport = (ITransport*) new SerialTransport(stream);
-    //     decoder = &RpcDecoderManager<>::getDecoder(*transport);
-    // }
+    explicit RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
     template<typename... Args>
-    void notify(const MsgPack::str_t method, Args&&... args)  {
+    void notify(const MsgPack::str_t& method, Args&&... args)  {
         uint32_t _id;
         decoder->send_call(NOTIFY_MSG, method, _id, std::forward<Args>(args)...);
     }
 
     template<typename RType, typename... Args>
-    bool call(const MsgPack::str_t method, RType& result, Args&&... args) {
+    bool call(const MsgPack::str_t& method, RType& result, Args&&... args) {
 
         uint32_t msg_id_wait;
 
@@ -57,7 +50,7 @@ public:
     }
 
     template<typename... Args>
-    bool send_rpc(const MsgPack::str_t method, uint32_t& wait_id, Args&&... args) {
+    bool send_rpc(const MsgPack::str_t& method, uint32_t& wait_id, Args&&... args) {
         uint32_t msg_id;
         if (decoder->send_call(CALL_MSG, method, msg_id, std::forward<Args>(args)...)) {
             wait_id = msg_id;

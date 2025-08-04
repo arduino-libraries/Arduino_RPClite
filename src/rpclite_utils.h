@@ -19,8 +19,8 @@
 namespace RpcUtils {
 namespace detail {
 
-#define WRONG_MSG       -2
-#define NO_MSG          -1
+#define WRONG_MSG       (-2)
+#define NO_MSG          (-1)
 #define CALL_MSG        0
 #define RESP_MSG        1
 #define NOTIFY_MSG      2
@@ -48,12 +48,12 @@ inline bool unpackTypedArray(MsgPack::Unpacker& unpacker, size_t& size, int& typ
 
     size = 0;
     for (size_t i=0; i<sz.size(); i++){
-        if ((i==0)) {
+        if (i==0) {
             if (unpacker.isInt() || unpacker.isUInt()) {
                 unpacker.deserialize(rpc_type);
                 type = rpc_type;
                 size++;
-                continue; // First element must be the type
+                continue; // the First element must be the type
             } else {
                 type = WRONG_MSG; // Not a valid type
             }

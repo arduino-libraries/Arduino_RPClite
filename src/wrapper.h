@@ -23,7 +23,7 @@ using namespace RpcUtils::detail;
 
 class IFunctionWrapper {
 public:
-    virtual ~IFunctionWrapper() {}
+    virtual ~IFunctionWrapper() = default;
     virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
 };
 
@@ -33,7 +33,7 @@ class RpcFunctionWrapper;
 template<typename R, typename... Args>
 class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
 public:
-    RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
+    explicit RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
     R operator()(Args... args) {
         return _func(args...);

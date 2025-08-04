@@ -13,17 +13,15 @@
 #define SERIALTRANSPORT_H
 #include "transport.h"
 
-class SerialTransport: public ITransport {
+class SerialTransport final : public ITransport {
 
     Stream* _stream;
 
     public:
 
-        SerialTransport(Stream* stream): _stream(stream){}
+        explicit SerialTransport(Stream* stream): _stream(stream){}
 
-        SerialTransport(Stream& stream): _stream(&stream){}
-
-        void begin(){}
+        explicit SerialTransport(Stream& stream): _stream(&stream){}
 
         bool available() override {
             return _stream->available();

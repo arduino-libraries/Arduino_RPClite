@@ -27,10 +27,10 @@ template<size_t BufferSize = MAX_BUFFER_SIZE>
 class RpcDecoder {
 
 public:
-    RpcDecoder(ITransport& transport) : _transport(transport) {}
+    explicit RpcDecoder(ITransport& transport) : _transport(transport) {}
 
     template<typename... Args>
-    bool send_call(const int call_type, const MsgPack::str_t method, uint32_t& msg_id, Args&&... args) {
+    bool send_call(const int call_type, const MsgPack::str_t& method, uint32_t& msg_id, Args&&... args) {
 
         if (call_type!=CALL_MSG && call_type!=NOTIFY_MSG) return false;
 
@@ -89,7 +89,7 @@ public:
 
     }
 
-    bool send_response(const MsgPack::Packer& packer) {
+    bool send_response(const MsgPack::Packer& packer) const {
         return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
     }
 
@@ -111,7 +111,6 @@ public:
         };
 
         int msg_type;
-        uint32_t msg_id;
         MsgPack::str_t method;
         MsgPack::arr_size_t req_size;
 
@@ -122,6 +121,7 @@ public:
         }
 
         if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
+            uint32_t msg_id;
             if (!unpacker.deserialize(msg_id, method)) {
                 consume(_packet_size);
                 reset_packet();
@@ -204,30 +204,30 @@ public:
 
     }
 
-    inline bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
+    bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
 
-    inline int packet_type() const { return _packet_type; }
+    int packet_type() const { return _packet_type; }
 
     size_t get_packet_size() const { return _packet_size;}
 
-    inline size_t size() const {return _bytes_stored;}
+    size_t size() const {return _bytes_stored;}
 
     friend class DecoderTester;
 
 private:
     ITransport& _transport;
-    uint8_t _raw_buffer[BufferSize];
+    uint8_t _raw_buffer[BufferSize] = {};
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
     uint32_t _msg_id = 0;
 
-    inline bool buffer_full() const { return _bytes_stored == BufferSize; }
+    bool buffer_full() const { return _bytes_stored == BufferSize; }
 
-    inline bool buffer_empty() const { return _bytes_stored == 0;}
+    bool buffer_empty() const { return _bytes_stored == 0;}
 
     // This is a blocking send, under the assumption _transport.write will always succeed eventually
-    inline size_t send(const uint8_t* data, const size_t size) {
+    size_t send(const uint8_t* data, const size_t size) const {
 
         size_t offset = 0;
 
