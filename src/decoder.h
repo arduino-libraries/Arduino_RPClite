@@ -79,8 +79,10 @@ public:
         MsgPack::object::nil_t nil;
         if (unpacker.unpackable(nil)){  // No error
             if (!unpacker.deserialize(nil, result)) return false;
-        } else {                        // RPC returned an error
-            if (!unpacker.deserialize(error, nil)) return false;
+        } else {
+            // RPC returned an error
+            if (!error.from_msgpack(unpacker)) return false;
+            if (!unpacker.deserialize(nil)) return false;
         }
 
         reset_packet();

@@ -20,6 +20,9 @@ using namespace RpcUtils::detail;
 #ifdef HANDLE_RPC_ERRORS
 #include <stdexcept>
 #endif
+#ifdef ARDUINO_ARCH_ZEPHYR
+#include <functional>
+#endif
 
 class IFunctionWrapper {
 public:
@@ -27,11 +30,22 @@ public:
     virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
 };
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+using std::make_index_sequence;
+#else
+using arx::stdx::make_index_sequence;
+#endif
+
+#ifdef ARDUINO_ARCH_ZEPHYR
+template<typename R, typename... Args>
+class RpcFunctionWrapper: public IFunctionWrapper {
+#else
 template<typename F>
 class RpcFunctionWrapper;
 
 template<typename R, typename... Args>
 class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
+#endif
 public:
     RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
@@ -50,7 +64,7 @@ public:
         // First check the parameters size
         if (!unpacker.isArray()){
             RpcError error(MALFORMED_CALL_ERR, "Unserializable parameters array");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 
@@ -59,13 +73,13 @@ public:
         unpacker.deserialize(param_size);
         if (param_size.size() < sizeof...(Args)){
             RpcError error(MALFORMED_CALL_ERR, "Missing call parameters (WARNING: Default param resolution is not implemented)");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 
         if (param_size.size() > sizeof...(Args)){
             RpcError error(MALFORMED_CALL_ERR, "Too many parameters");
-            packer.serialize(error, nil);
+            error.to_msgpack(packer);
             return false;
         }
 
@@ -92,7 +106,7 @@ private:
         std::tuple<Args...> args;
         if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
-        invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, nil);
         return true;
     }
@@ -104,15 +118,22 @@ private:
         std::tuple<Args...> args;
         if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
-        R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        R out = invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, out);
         return true;
     }
 };
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+template<typename F>
+auto wrap(F&& f) {
+    return new RpcFunctionWrapper(std::function(std::forward<F>(f)));
+};
+#else
 template<typename F, typename Signature = typename arx::function_traits<typename std::decay<F>::type>::function_type>
 auto wrap(F&& f) -> RpcFunctionWrapper<Signature>* {
     return new RpcFunctionWrapper<Signature>(std::forward<F>(f));
 };
+#endif
 
 #endif

@@ -61,7 +61,7 @@ public:
 
         // handler not found
         MsgPack::object::nil_t nil;
-        packer.serialize(RpcError(FUNCTION_NOT_FOUND_ERR, name), nil);
+        RpcError(FUNCTION_NOT_FOUND_ERR, name).to_msgpack(packer);
         return false;
     }
 
