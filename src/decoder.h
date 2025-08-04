@@ -19,11 +19,9 @@
 using namespace RpcUtils::detail;
 
 #define MIN_RPC_BYTES   4
-
-#define MAX_BUFFER_SIZE 1024
 #define CHUNK_SIZE      32
 
-template<size_t BufferSize = MAX_BUFFER_SIZE>
+template<size_t BufferSize = DECODER_BUFFER_SIZE>
 class RpcDecoder {
 
 public:

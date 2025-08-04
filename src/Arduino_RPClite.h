@@ -14,6 +14,7 @@
 
 #include "Arduino.h"
 
+#define DECODER_BUFFER_SIZE     1024
 //#define HANDLE_RPC_ERRORS
 #include "transport.h"
 #include "client.h"

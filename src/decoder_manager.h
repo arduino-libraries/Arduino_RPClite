@@ -51,7 +51,7 @@ private:
     struct DecoderStorage {
         union {
             RpcDecoder<> instance;
-            uint8_t raw[sizeof(RpcDecoder<>)];
+            uint8_t raw[sizeof(RpcDecoder<>)]{};
         };
 
         DecoderStorage() {}
