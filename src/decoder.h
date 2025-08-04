@@ -214,7 +214,7 @@ public:
 
 private:
     ITransport* _transport;
-    uint8_t _raw_buffer[BufferSize] = {};
+    uint8_t _raw_buffer[BufferSize]{};
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
