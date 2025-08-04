@@ -189,9 +189,15 @@ deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
     return deserialize_tuple<I + 1>(unpacker, out);
 }
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+using std::index_sequence;
+#else
+using arx::stdx::index_sequence;
+#endif
+
 // Helper to invoke a function with a tuple of arguments
 template<typename F, typename Tuple, std::size_t... I>
-inline auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
+inline auto invoke_with_tuple(F&& f, Tuple&& t, index_sequence<I...>)
     -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
     return f(std::get<I>(std::forward<Tuple>(t))...);
 }

@@ -31,6 +31,12 @@ public:
 };
 
 #ifdef ARDUINO_ARCH_ZEPHYR
+using std::make_index_sequence;
+#else
+using arx::stdx::make_index_sequence;
+#endif
+
+#ifdef ARDUINO_ARCH_ZEPHYR
 template<typename R, typename... Args>
 class RpcFunctionWrapper: public IFunctionWrapper {
 #else
@@ -100,7 +106,7 @@ private:
         std::tuple<Args...> args;
         if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
-        invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, nil);
         return true;
     }
@@ -112,7 +118,7 @@ private:
         std::tuple<Args...> args;
         if (!deserialize_tuple(unpacker, args)) return false;
         MsgPack::object::nil_t nil;
-        R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        R out = invoke_with_tuple(_func, args, make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, out);
         return true;
     }
