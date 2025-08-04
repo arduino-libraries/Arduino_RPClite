@@ -27,7 +27,7 @@ template<size_t BufferSize = MAX_BUFFER_SIZE>
 class RpcDecoder {
 
 public:
-    explicit RpcDecoder(ITransport& transport) : _transport(transport) {}
+    explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}
 
     template<typename... Args>
     bool send_call(const int call_type, const MsgPack::str_t& method, uint32_t& msg_id, Args&&... args) {
@@ -160,8 +160,8 @@ public:
     // Fill the raw buffer to its capacity
     void advance() {
 
-        if (_transport.available() && !buffer_full()) {
-            size_t bytes_read = _transport.read(_raw_buffer + _bytes_stored, BufferSize - _bytes_stored);
+        if (_transport->available() && !buffer_full()) {
+            size_t bytes_read = _transport->read(_raw_buffer + _bytes_stored, BufferSize - _bytes_stored);
             _bytes_stored += bytes_read;
         }
 
@@ -215,7 +215,7 @@ public:
     friend class DecoderTester;
 
 private:
-    ITransport& _transport;
+    ITransport* _transport;
     uint8_t _raw_buffer[BufferSize] = {};
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
@@ -226,13 +226,13 @@ private:
 
     bool buffer_empty() const { return _bytes_stored == 0;}
 
-    // This is a blocking send, under the assumption _transport.write will always succeed eventually
+    // This is a blocking send, under the assumption _transport->write will always succeed eventually
     size_t send(const uint8_t* data, const size_t size) const {
 
         size_t offset = 0;
 
         while (offset < size) {
-            size_t bytes_written = _transport.write(data + offset, size - offset);
+            size_t bytes_written = _transport->write(data + offset, size - offset);
             offset += bytes_written;
         }
 
