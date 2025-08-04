@@ -32,19 +32,19 @@ public:
         return dispatcher.bind(name, func, tag);
     }
 
-    bool hasTag(MsgPack::str_t name, MsgPack::str_t tag) const {
+    bool hasTag(const MsgPack::str_t& name, MsgPack::str_t tag) const {
         return dispatcher.hasTag(name, tag);
     }
 
-    void run() {
+    bool run() {
 
         RPCRequest<> req;
 
-        if (!get_rpc(req)) return; // Populate local request
+        if (!get_rpc(req)) return false; // Populate local request
 
         process_request(req);      // Process local data
 
-        send_response(req);           // Send local data
+        return send_response(req);           // Send local data
 
     }
 
@@ -87,7 +87,7 @@ public:
 
 private:
     RpcDecoder<>* decoder = nullptr;
-    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
+    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher{};
     
 };
 
