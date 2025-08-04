@@ -20,6 +20,9 @@ using namespace RpcUtils::detail;
 #ifdef HANDLE_RPC_ERRORS
 #include <stdexcept>
 #endif
+#ifdef ARDUINO_ARCH_ZEPHYR
+#include <functional>
+#endif
 
 class IFunctionWrapper {
 public:
@@ -27,11 +30,16 @@ public:
     virtual bool operator()(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) = 0;
 };
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+template<typename R, typename... Args>
+class RpcFunctionWrapper: public IFunctionWrapper {
+#else
 template<typename F>
 class RpcFunctionWrapper;
 
 template<typename R, typename... Args>
 class RpcFunctionWrapper<std::function<R(Args...)>>: public IFunctionWrapper {
+#endif
 public:
     RpcFunctionWrapper(std::function<R(Args...)> func) : _func(func) {}
 
@@ -110,9 +118,16 @@ private:
     }
 };
 
+#ifdef ARDUINO_ARCH_ZEPHYR
+template<typename F>
+auto wrap(F&& f) {
+    return new RpcFunctionWrapper(std::function(std::forward<F>(f)));
+};
+#else
 template<typename F, typename Signature = typename arx::function_traits<typename std::decay<F>::type>::function_type>
 auto wrap(F&& f) -> RpcFunctionWrapper<Signature>* {
     return new RpcFunctionWrapper<Signature>(std::forward<F>(f));
 };
+#endif
 
 #endif
