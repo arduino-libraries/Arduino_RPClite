@@ -94,4 +94,4 @@ public:
 
 };
 
-#endif RPCLITE_REQUEST_H
+#endif // RPCLITE_REQUEST_H
