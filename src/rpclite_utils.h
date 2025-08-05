@@ -19,6 +19,7 @@
 namespace RpcUtils {
 namespace detail {
 
+#define TYPE_ERROR      (-1)
 #define WRONG_MSG       (-2)
 #define NO_MSG          (-1)
 #define CALL_MSG        0
@@ -165,10 +166,10 @@ inline bool unpackObject(MsgPack::Unpacker& unpacker){
 }
 
 template<typename T>
-inline bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
-    if (!unpacker.unpackable(value)) return false;
+int deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
+    if (!unpacker.unpackable(value)) return TYPE_ERROR;
     unpacker.deserialize(value);
-    return true;
+    return 0;
 }
 
 
@@ -177,21 +178,22 @@ inline bool deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
 /////////////////////////////
 
 template<std::size_t I = 0, typename... Ts>
-inline typename std::enable_if<I == sizeof...(Ts), bool>::type
+typename std::enable_if<I == sizeof...(Ts), int>::type
 deserialize_tuple(MsgPack::Unpacker&, std::tuple<Ts...>&) {
-    return true;
+    return 0;
 }
 
 template<std::size_t I = 0, typename... Ts>
-inline typename std::enable_if<I < sizeof...(Ts), bool>::type
+typename std::enable_if<I < sizeof...(Ts), int>::type
 deserialize_tuple(MsgPack::Unpacker& unpacker, std::tuple<Ts...>& out) {
-    if (!deserialize_single(unpacker, std::get<I>(out))) return false;
+    const int res = deserialize_single(unpacker, std::get<I>(out));
+    if (res==TYPE_ERROR) return TYPE_ERROR-I;
     return deserialize_tuple<I + 1>(unpacker, out);
 }
 
 // Helper to invoke a function with a tuple of arguments
 template<typename F, typename Tuple, std::size_t... I>
-inline auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
+auto invoke_with_tuple(F&& f, Tuple&& t, arx::stdx::index_sequence<I...>)
     -> decltype(f(std::get<I>(std::forward<Tuple>(t))...)) {
     return f(std::get<I>(std::forward<Tuple>(t))...);
 }

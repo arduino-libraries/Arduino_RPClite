@@ -12,6 +12,8 @@
 #ifndef RPCLITE_WRAPPER_H
 #define RPCLITE_WRAPPER_H
 
+#include <string>
+
 #include "error.h"
 #include "rpclite_utils.h"
 
@@ -69,7 +71,20 @@ public:
             return false;
         }
 
-        return handle_call(unpacker, packer);
+        const int res = handle_call(unpacker, packer);
+        if (res<0) {
+            MsgPack::str_t err_msg = "Wrong type parameter in position: ";
+#ifdef ARDUINO
+            err_msg += String(TYPE_ERROR-res);
+#else
+            err_msg += std::to_string(TYPE_ERROR-res);
+#endif
+            RpcError error(MALFORMED_CALL_ERR, err_msg);
+            packer.serialize(error, nil);
+            return false;
+        }
+
+        return true;
 
 #ifdef HANDLE_RPC_ERRORS
     } catch (const std::exception& e) {
@@ -86,27 +101,29 @@ private:
     std::function<R(Args...)> _func;
 
     template<typename Dummy = R>
-    typename std::enable_if<std::is_void<Dummy>::value, bool>::type
+    typename std::enable_if<std::is_void<Dummy>::value, int>::type
     handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         //unpacker not ready if deserialization fails at this point
         std::tuple<Args...> args;
-        if (!deserialize_tuple(unpacker, args)) return false;
+        const int res = deserialize_tuple(unpacker, args);
+        if (res<0) return res;
         MsgPack::object::nil_t nil;
         invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, nil);
-        return true;
+        return 0;
     }
 
     template<typename Dummy = R>
-    typename std::enable_if<!std::is_void<Dummy>::value, bool>::type
+    typename std::enable_if<!std::is_void<Dummy>::value, int>::type
     handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         //unpacker not ready if deserialization fails at this point
         std::tuple<Args...> args;
-        if (!deserialize_tuple(unpacker, args)) return false;
+        const int res = deserialize_tuple(unpacker, args);
+        if (res<0) return res;
         MsgPack::object::nil_t nil;
         R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
         packer.serialize(nil, out);
-        return true;
+        return 0;
     }
 };
 
