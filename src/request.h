@@ -12,7 +12,7 @@
 #ifndef RPCLITE_REQUEST_H
 #define RPCLITE_REQUEST_H
 
-#define DEFAULT_RPC_BUFFER_SIZE  256
+#define DEFAULT_RPC_BUFFER_SIZE  (DECODER_BUFFER_SIZE / 4)
 
 
 #include "rpclite_utils.h"
@@ -21,7 +21,7 @@ template<size_t BufferSize = DEFAULT_RPC_BUFFER_SIZE>
 class RPCRequest {
 
 public:
-    uint8_t buffer[BufferSize];
+    uint8_t buffer[BufferSize]{};
     size_t size = 0;
     int type = NO_MSG;
     uint32_t msg_id = 0;
@@ -29,16 +29,7 @@ public:
     MsgPack::Packer packer;
     MsgPack::Unpacker unpacker;
 
-    // void print(){
-
-    //     Serial.print("internal buffer ");
-    //     for (size_t i=0; i<size; i++){
-    //         Serial.print(buffer[i], HEX);
-    //     }
-    //     Serial.println("");
-    // }
-
-    size_t get_buffer_size() const {
+    static size_t get_buffer_size() {
         return BufferSize;
     }
 
@@ -94,4 +85,4 @@ public:
 
 };
 
-#endif RPCLITE_REQUEST_H
+#endif //RPCLITE_REQUEST_H
