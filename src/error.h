@@ -12,6 +12,8 @@
 #ifndef RPCLITE_ERROR_H
 #define RPCLITE_ERROR_H
 
+#include <utility>
+
 #include "MsgPack.h"
 
 #define NO_ERR                   0x00
@@ -29,8 +31,8 @@ struct RpcError {
         traceback = "";
     }
 
-    RpcError(int c, const MsgPack::str_t& tb)
-        : code(c), traceback(tb) {}
+    RpcError(const int c, MsgPack::str_t tb)
+        : code(c), traceback(std::move(tb)) {}
 
     MSGPACK_DEFINE(code, traceback); // -> [code, traceback]
 };

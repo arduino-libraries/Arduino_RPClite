@@ -12,60 +12,56 @@
 #ifndef RPCLITE_SERVER_H
 #define RPCLITE_SERVER_H
 
+#include <utility>
+
 #include "request.h"
 #include "error.h"
-#include "wrapper.h"
 #include "dispatcher.h"
 #include "decoder.h"
 #include "decoder_manager.h"
-#include "SerialTransport.h"
 
 #define MAX_CALLBACKS   100
 
 class RPCServer {
 
 public:
-    RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
-
-    // This constructor was removed because it leads to decoder duplication
-    // RPCServer(Stream& stream) {
-    //     ITransport* transport = (ITransport*) new SerialTransport(stream);
-    //     decoder = &RpcDecoderManager<>::getDecoder(*transport);
-    // }
+    explicit RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
 
     template<typename F>
     bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t tag=""){
         return dispatcher.bind(name, func, tag);
     }
 
-    bool hasTag(MsgPack::str_t name, MsgPack::str_t tag){
+    bool hasTag(const MsgPack::str_t& name, MsgPack::str_t tag) const {
         return dispatcher.hasTag(name, tag);
     }
 
-    void run() {
+    bool run() {
 
         RPCRequest<> req;
 
-        if (!get_rpc(req)) return; // Populate local request
+        if (!get_rpc(req)) return false; // Populate local request
 
-        process_request(req);   // Process local data
+        process_request(req);      // Process local data
 
-        send_response(req);     // Send from local data
+        return send_response(req);           // Send local data
 
     }
 
-    bool get_rpc(RPCRequest<>& req, MsgPack::str_t tag="") {
+    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    bool get_rpc(RPCRequest<RpcSize>& req, MsgPack::str_t tag="") {
         decoder->decode();
 
-        MsgPack::str_t method = decoder->fetch_rpc_method();
+        const MsgPack::str_t method = decoder->fetch_rpc_method();
 
-        if (method == "" || !hasTag(method, tag)) return false;
+        if (method == "" || !dispatcher.hasTag(method, tag)) return false;
 
-        req.size = decoder->get_request(req.buffer, req.get_buffer_size());   // todo overload get_request(RPCRequest& req) so all the request info is in req
+        req.size = decoder->get_request(req.buffer, RpcSize);
         return req.size > 0;
     }
 
-    void process_request(RPCRequest<>& req) {
+    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    void process_request(RPCRequest<RpcSize>& req) {
 
         if (!req.unpack_request_headers()) {
             req.reset();
@@ -78,7 +74,8 @@ public:
 
     }
 
-    bool send_response(RPCRequest<>& req) {
+    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    bool send_response(const RPCRequest<RpcSize>& req) const {
 
         if (req.type == NO_MSG || req.packer.size() == 0) {
             return true; // No response to send
@@ -92,7 +89,7 @@ public:
 
 private:
     RpcDecoder<>* decoder = nullptr;
-    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher;
+    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher{};
     
 };
 
