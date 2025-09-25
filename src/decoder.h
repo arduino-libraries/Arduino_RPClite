@@ -62,16 +62,33 @@ public:
         MsgPack::Unpacker unpacker;
         unpacker.clear();
 
-        size_t res_size = get_packet_size();
-        if (!unpacker.feed(_raw_buffer, res_size)) return false;
+        if (!unpacker.feed(_raw_buffer, _packet_size)) return false;
 
         MsgPack::arr_size_t resp_size;
         int resp_type;
         uint32_t resp_id;
 
-        if (!unpacker.deserialize(resp_size, resp_type, resp_id)) return false;
-        if (resp_size.size() != RESPONSE_SIZE) return false;
-        if (resp_type != RESP_MSG) return false;
+        if (!unpacker.deserialize(resp_size, resp_type, resp_id)) {
+            error.code = PARSING_ERR;
+            error.traceback = "Non parsable RPC response headers (check type)";
+            discard();
+            return false;
+        }
+        if (resp_size.size() != RESPONSE_SIZE) {
+            error.code = PARSING_ERR;
+            error.traceback = "Wrong RPC response size";
+            discard();
+            return false;
+        }
+        if (resp_type != RESP_MSG) {
+            // This should never happen
+            error.code = GENERIC_ERR;
+            error.traceback = "Unexpected response type";
+            discard();
+            return false;
+        }
+
+        // DO NOT MODIFY THIS if resp_id is not what is expected then the RPC response belongs to s/o else
         if (resp_id != msg_id) return false;
 
         MsgPack::object::nil_t nil;
@@ -79,18 +96,20 @@ public:
             if (!unpacker.deserialize(nil, result)) {
                 error.code = PARSING_ERR;
                 error.traceback = "Result not parsable (check type)";
+                discard();
                 return false;
             }
         } else {                        // RPC returned an error
             if (!unpacker.deserialize(error, nil)) {
                 error.code = PARSING_ERR;
                 error.traceback = "RPC Error not parsable (check type)";
+                discard();
                 return false;
             }
         }
 
+        consume(_packet_size);
         reset_packet();
-        consume(res_size);
         return true;
 
     }
@@ -111,8 +130,7 @@ public:
 
         unpacker.clear();
         if (!unpacker.feed(_raw_buffer, _packet_size)) {    // feed should not fail at this point
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return "";
         };
 
@@ -121,27 +139,23 @@ public:
         MsgPack::arr_size_t req_size;
 
         if (!unpacker.deserialize(req_size, msg_type)) {
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return ""; // Header not unpackable
         }
 
         if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
             uint32_t msg_id;
             if (!unpacker.deserialize(msg_id, method)) {
-                consume(_packet_size);
-                reset_packet();
+                discard();
                 return ""; // Method not unpackable
             }
         } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
             if (!unpacker.deserialize(method)) {
-                consume(_packet_size);
-                reset_packet();
+                discard();
                 return ""; // Method not unpackable
             }
         } else {
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return ""; // Invalid request size/type
         }
 
@@ -260,6 +274,10 @@ private:
         return consume(packet_size);
     }
 
+    void discard() {
+        consume(_packet_size);
+        reset_packet();
+    }
 
     void reset_packet() {
         _packet_type = NO_MSG;
