@@ -68,6 +68,9 @@ public:
             lastError.code = tmp_error.code;
             lastError.traceback = tmp_error.traceback;
             return true;
+        } else if (tmp_error.code == PARSING_ERR) {     // catches the parsing error
+            lastError.code = tmp_error.code;
+            lastError.traceback = tmp_error.traceback;
         }
         return false;
     }

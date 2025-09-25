@@ -76,9 +76,17 @@ public:
 
         MsgPack::object::nil_t nil;
         if (unpacker.unpackable(nil)){  // No error
-            if (!unpacker.deserialize(nil, result)) return false;
+            if (!unpacker.deserialize(nil, result)) {
+                error.code = PARSING_ERR;
+                error.traceback = "Result not parsable (check type)";
+                return false;
+            }
         } else {                        // RPC returned an error
-            if (!unpacker.deserialize(error, nil)) return false;
+            if (!unpacker.deserialize(error, nil)) {
+                error.code = PARSING_ERR;
+                error.traceback = "RPC Error not parsable (check type)";
+                return false;
+            }
         }
 
         reset_packet();

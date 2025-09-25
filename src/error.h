@@ -17,6 +17,7 @@
 #include "MsgPack.h"
 
 #define NO_ERR                   0x00
+#define PARSING_ERR              0xFC
 #define MALFORMED_CALL_ERR       0xFD
 #define FUNCTION_NOT_FOUND_ERR   0xFE
 #define GENERIC_ERR              0xFF
