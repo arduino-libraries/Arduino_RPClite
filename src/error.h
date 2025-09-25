@@ -35,6 +35,11 @@ struct RpcError {
     RpcError(const int c, MsgPack::str_t tb)
         : code(c), traceback(std::move(tb)) {}
 
+    void copy(const RpcError& err) {
+        code = err.code;
+        traceback = err.traceback;
+    }
+
     MSGPACK_DEFINE(code, traceback); // -> [code, traceback]
 };
 

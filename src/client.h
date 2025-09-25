@@ -41,7 +41,8 @@ public:
         }
 
         // blocking call
-        while (!get_response(msg_id_wait, result)){
+        RpcError tmp_error;
+        while (!get_response(msg_id_wait, result, tmp_error)) {
             //delay(1);
         }
 
@@ -60,17 +61,14 @@ public:
     }
 
     template<typename RType>
-    bool get_response(const uint32_t wait_id, RType& result) {
-        RpcError tmp_error;
+    bool get_response(const uint32_t wait_id, RType& result, RpcError& error) {
         decoder->decode();
 
-        if (decoder->get_response(wait_id, result, tmp_error)) {
-            lastError.code = tmp_error.code;
-            lastError.traceback = tmp_error.traceback;
+        if (decoder->get_response(wait_id, result, error)) {
+            lastError.copy(error);
             return true;
-        } else if (tmp_error.code == PARSING_ERR) {     // catches the parsing error
-            lastError.code = tmp_error.code;
-            lastError.traceback = tmp_error.traceback;
+        } else if (error.code == PARSING_ERR) {     // catches the parsing error
+            lastError.copy(error);
         }
         return false;
     }
