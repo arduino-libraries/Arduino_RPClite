@@ -67,11 +67,11 @@ public:
         if (decoder->get_response(wait_id, result, error)) {
             lastError.copy(error);
             return true;
-        } else if (error.code == PARSING_ERR) {     // catches the parsing error
-            lastError.copy(error);
         }
         return false;
     }
+
+    uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
 };
 
