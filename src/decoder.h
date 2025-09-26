@@ -62,29 +62,54 @@ public:
         MsgPack::Unpacker unpacker;
         unpacker.clear();
 
-        size_t res_size = get_packet_size();
-        if (!unpacker.feed(_raw_buffer, res_size)) return false;
+        if (!unpacker.feed(_raw_buffer, _packet_size)) return false;
 
         MsgPack::arr_size_t resp_size;
         int resp_type;
         uint32_t resp_id;
 
         if (!unpacker.deserialize(resp_size, resp_type, resp_id)) return false;
-        if (resp_size.size() != RESPONSE_SIZE) return false;
-        if (resp_type != RESP_MSG) return false;
+
+        // ReSharper disable once CppDFAUnreachableCode
         if (resp_id != msg_id) return false;
+
+        // msg_id OK packet will be consumed.
+        if (resp_type != RESP_MSG) {
+            // This should never happen
+            error.code = PARSING_ERR;
+            error.traceback = "Unexpected response type";
+            discard();
+            return true;
+        }
+
+        if (resp_size.size() != RESPONSE_SIZE) {
+            // This should never happen
+            error.code = PARSING_ERR;
+            error.traceback = "Unexpected RPC response size";
+            discard();
+            return true;
+        }
 
         MsgPack::object::nil_t nil;
         if (unpacker.unpackable(nil)){  // No error
-            if (!unpacker.deserialize(nil, result)) return false;
+            if (!unpacker.deserialize(nil, result)) {
+                error.code = PARSING_ERR;
+                error.traceback = "Result not parsable (check type)";
+                discard();
+                return true;
+            }
         } else {                        // RPC returned an error
-            if (!unpacker.deserialize(error, nil)) return false;
+            if (!unpacker.deserialize(error, nil)) {
+                error.code = PARSING_ERR;
+                error.traceback = "RPC Error not parsable (check type)";
+                discard();
+                return true;
+            }
         }
 
+        consume(_packet_size);
         reset_packet();
-        consume(res_size);
         return true;
-
     }
 
     bool send_response(const MsgPack::Packer& packer) const {
@@ -103,8 +128,7 @@ public:
 
         unpacker.clear();
         if (!unpacker.feed(_raw_buffer, _packet_size)) {    // feed should not fail at this point
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return "";
         };
 
@@ -113,27 +137,24 @@ public:
         MsgPack::arr_size_t req_size;
 
         if (!unpacker.deserialize(req_size, msg_type)) {
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return ""; // Header not unpackable
         }
 
+        // ReSharper disable once CppDFAUnreachableCode
         if (msg_type == CALL_MSG && req_size.size() == REQUEST_SIZE) {
             uint32_t msg_id;
             if (!unpacker.deserialize(msg_id, method)) {
-                consume(_packet_size);
-                reset_packet();
+                discard();
                 return ""; // Method not unpackable
             }
         } else if (msg_type == NOTIFY_MSG && req_size.size() == NOTIFY_SIZE) {
             if (!unpacker.deserialize(method)) {
-                consume(_packet_size);
-                reset_packet();
+                discard();
                 return ""; // Method not unpackable
             }
         } else {
-            consume(_packet_size);
-            reset_packet();
+            discard();
             return ""; // Invalid request size/type
         }
 
@@ -183,11 +204,13 @@ public:
 
                 if (type != CALL_MSG && type != RESP_MSG && type != NOTIFY_MSG) {
                     consume(bytes_checked);
+                    _discarded_packets++;
                     break; // Not a valid RPC type (could be type=WRONG_MSG)
                 }
 
                 if ((type == CALL_MSG && container_size != REQUEST_SIZE) || (type == RESP_MSG && container_size != RESPONSE_SIZE) || (type == NOTIFY_MSG && container_size != NOTIFY_SIZE)) {
                     consume(bytes_checked);
+                    _discarded_packets++;
                     break; // Not a valid RPC format
                 }
 
@@ -210,6 +233,8 @@ public:
 
     size_t size() const {return _bytes_stored;}
 
+    uint32_t get_discarded_packets() const {return _discarded_packets;}
+
     friend class DecoderTester;
 
 private:
@@ -219,6 +244,7 @@ private:
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
     uint32_t _msg_id = 0;
+    uint32_t _discarded_packets = 0;
 
     bool buffer_full() const { return _bytes_stored == BufferSize; }
 
@@ -252,6 +278,11 @@ private:
         return consume(packet_size);
     }
 
+    void discard() {
+        consume(_packet_size);
+        reset_packet();
+        _discarded_packets++;
+    }
 
     void reset_packet() {
         _packet_type = NO_MSG;

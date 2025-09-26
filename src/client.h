@@ -41,7 +41,8 @@ public:
         }
 
         // blocking call
-        while (!get_response(msg_id_wait, result)){
+        RpcError tmp_error;
+        while (!get_response(msg_id_wait, result, tmp_error)) {
             //delay(1);
         }
 
@@ -60,17 +61,17 @@ public:
     }
 
     template<typename RType>
-    bool get_response(const uint32_t wait_id, RType& result) {
-        RpcError tmp_error;
+    bool get_response(const uint32_t wait_id, RType& result, RpcError& error) {
         decoder->decode();
 
-        if (decoder->get_response(wait_id, result, tmp_error)) {
-            lastError.code = tmp_error.code;
-            lastError.traceback = tmp_error.traceback;
+        if (decoder->get_response(wait_id, result, error)) {
+            lastError.copy(error);
             return true;
         }
         return false;
     }
+
+    uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
 };
 

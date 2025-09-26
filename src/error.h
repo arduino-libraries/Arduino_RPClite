@@ -17,6 +17,7 @@
 #include "MsgPack.h"
 
 #define NO_ERR                   0x00
+#define PARSING_ERR              0xFC
 #define MALFORMED_CALL_ERR       0xFD
 #define FUNCTION_NOT_FOUND_ERR   0xFE
 #define GENERIC_ERR              0xFF
@@ -33,6 +34,11 @@ struct RpcError {
 
     RpcError(const int c, MsgPack::str_t tb)
         : code(c), traceback(std::move(tb)) {}
+
+    void copy(const RpcError& err) {
+        code = err.code;
+        traceback = err.traceback;
+    }
 
     MSGPACK_DEFINE(code, traceback); // -> [code, traceback]
 };
