@@ -61,6 +61,8 @@ jobs:
             artifact-name-suffix: arduino-renesas_portenta-portenta_c33
           - fqbn: arduino:renesas_uno:unor4wifi
             artifact-name-suffix: arduino-renesas_uno-unor4wifi
+          - fqbn: arduino:zephyr:unoq
+            artifact-name-suffix: arduino-zephyr-unoq
 
     steps:
       - name: Checkout
