@@ -4,7 +4,7 @@
   "description": "A MessagePack RPC library for Arduino",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bcmi-labs/Arduino_RPClite"
+    "url": "https://github.com/arduino-libraries/Arduino_RPCLite"
   },
   "authors": {
     "name": "Lucio Rossi",
