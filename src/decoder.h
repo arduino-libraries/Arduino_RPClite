@@ -15,11 +15,11 @@
 #include "MsgPack.h"
 #include "transport.h"
 #include "rpclite_utils.h"
+#include "error.h"
 
 using namespace RpcUtils::detail;
 
 #define MIN_RPC_BYTES   4
-#define CHUNK_SIZE      32
 
 template<size_t BufferSize = DECODER_BUFFER_SIZE>
 class RpcDecoder {
@@ -78,7 +78,9 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected response type";
-            crop_response(true);
+            consume(_response_size, _response_offset);
+            if (_response_offset == 0) reset_packet();
+            _discarded_packets++;
             return true;
         }
 
@@ -86,7 +88,9 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected RPC response size";
-            crop_response(true);
+            consume(_response_size, _response_offset);
+            if (_response_offset == 0) reset_packet();
+            _discarded_packets++;
             return true;
         }
 
@@ -95,19 +99,25 @@ public:
             if (!unpacker.deserialize(nil, result)) {
                 error.code = PARSING_ERR;
                 error.traceback = "Result not parsable (check type)";
-                crop_response(true);
+                consume(_response_size, _response_offset);
+                if (_response_offset == 0) reset_packet();
+                _discarded_packets++;
                 return true;
             }
         } else {                        // RPC returned an error
             if (!unpacker.deserialize(error, nil)) {
                 error.code = PARSING_ERR;
                 error.traceback = "RPC Error not parsable (check type)";
-                crop_response(true);
+                consume(_response_size, _response_offset);
+                if (_response_offset == 0) reset_packet();
+                _discarded_packets++;
                 return true;
             }
         }
 
-        crop_response(false);
+        if (_response_offset == 0) reset_packet();
+        consume(_response_size, _response_offset);
+
         return true;
     }
 
@@ -190,10 +200,8 @@ public:
         size_t offset = 0;
 
         if (packet_incoming()) {
-            if (response_queued()) {
-                return;
-            }
-            offset = _response_offset;
+            if (response_queued()) return;  // parsing complete
+            offset = _response_offset;      // looking for a RESP
         }
 
         size_t bytes_checked = 0;
@@ -220,24 +228,16 @@ public:
                     break; // Not a valid RPC format
                 }
 
-                if (offset == 0) {  // that's the first packet
+                if (offset == 0) {
                     _packet_type = type;
                     _packet_size = bytes_checked;
-                    if (type == RESP_MSG) { // and it is for a client
-                        _response_offset = 0;
-                        _response_size = bytes_checked;
-                    } else if (!response_queued()) {
-                        _response_offset = bytes_checked;
-                        _response_size = 0;
-                    }
+                }
+
+                if (type == RESP_MSG) {
+                    _response_offset = offset;
+                    _response_size = bytes_checked; // response queued
                 } else {
-                    if (type == RESP_MSG) {     // we have a response packet in the queue
-                        _response_offset = offset;
-                        _response_size = bytes_checked;
-                    } else {                    // look further
-                        _response_offset = offset + bytes_checked;
-                        _response_size = 0;
-                    }
+                    _response_offset = offset + bytes_checked;
                 }
 
                 break;
@@ -250,7 +250,7 @@ public:
     bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
 
     bool response_queued() const {
-        return (_response_offset < _bytes_stored) && (_response_size > 0);
+        return _response_size > 0;
     }
 
     int packet_type() const { return _packet_type; }
@@ -303,21 +303,7 @@ private:
         }
 
         reset_packet();
-        if (_response_offset >= packet_size) {
-            _response_offset -= packet_size;
-        }
         return consume(packet_size);
-    }
-
-    void crop_response(bool discard) {
-        consume(_response_size, _response_offset);
-        if (_response_offset==0) {  // the response was in the first position
-            reset_packet();
-        }
-        reset_response();
-        if (discard) {
-            _discarded_packets++;
-        }
     }
 
     void discard() {
@@ -332,7 +318,7 @@ private:
     }
 
     void reset_response() {
-        _response_offset = _bytes_stored;
+        _response_offset = 0;
         _response_size = 0;
     }
 
@@ -343,6 +329,12 @@ private:
         size_t remaining_bytes = _bytes_stored - size;
         for (size_t i=offset; i<remaining_bytes; i++){
             _raw_buffer[i] = _raw_buffer[i+size];
+        }
+
+        if (_response_offset >= offset + size) {
+            _response_offset -= size;
+        } else {
+            reset_response();
         }
 
         _bytes_stored = remaining_bytes;
