@@ -208,7 +208,7 @@ public:
 
         size_t bytes_checked = 0;
         size_t container_size;
-        int type;
+        int type = NO_MSG;
         MsgPack::Unpacker unpacker;
 
         while (bytes_checked + offset < _bytes_stored){
