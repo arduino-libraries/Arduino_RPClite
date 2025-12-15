@@ -48,7 +48,7 @@ void runDecoderTest(const char* label) {
   Serial.println("-- Done --\n");
 }
 
-void runDecoderConsumeTest(const char* label, size_t second_packet_sz) {
+void runDecoderConsumeTest(const char* label, size_t expected_2nd_pack_size) {
   Serial.println(label);
 
   print_buf();
@@ -63,19 +63,183 @@ void runDecoderConsumeTest(const char* label, size_t second_packet_sz) {
     delay(50);
   }
 
+  dt.first_response_info();
+
+  while (!decoder.response_queued()) {
+    Serial.println("1st response not ready");
+    decoder.decode();
+    delay(50);
+  }
+
   size_t pack_size = decoder.get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
-  Serial.print("Consuming 2nd packet of given size: ");
-  Serial.println(second_packet_sz);
+  dt.first_response_info();
 
-  dt.crop_bytes(second_packet_sz, pack_size);
+  if ((dt.get_response_offset()!=pack_size)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+    Serial.println("ERROR parsing 1st response\n");
+    return;
+  }
+
+  Serial.print("Consuming 2nd packet of given size: ");
+  Serial.println(dt.get_response_size());
+
+  dt.crop_bytes(dt.get_response_size(), dt.get_response_offset());
 
   dt.print_raw_buf();
 
   Serial.println("-- Done --\n");
 }
+
+void runDecoderPopFirstTest(const char* label, size_t expected_2nd_pack_size) {
+  Serial.println(label);
+
+  print_buf();
+  DummyTransport dummy_transport(packer.data(), packer.size());
+  RpcDecoder<> decoder(dummy_transport);
+
+  DecoderTester dt(decoder);
+
+  while (!decoder.packet_incoming()) {
+    Serial.println("Packet not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  while (!decoder.response_queued()) {
+    Serial.println("1st response not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  dt.first_response_info();
+
+  size_t pack_size = decoder.get_packet_size();
+  Serial.print("Consuming 1st Packet of size: ");
+  Serial.println(pack_size);
+  dt.pop_first();
+  dt.print_raw_buf();
+
+  dt.first_response_info();
+
+  if ((dt.get_response_offset()!=0)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+    Serial.println("ERROR moving 1st response\n");
+    return;
+  }
+
+  Serial.print("Consuming 2nd packet of given size: ");
+  Serial.println(dt.get_response_size());
+
+  dt.crop_bytes(dt.get_response_size(), dt.get_response_offset());
+
+  dt.print_raw_buf();
+  dt.first_response_info();
+
+  Serial.println("-- Done --\n");
+}
+
+void runDecoderGetResponseTest(const char* label, size_t expected_2nd_pack_size, int _id) {
+  Serial.println(label);
+
+  print_buf();
+  DummyTransport dummy_transport(packer.data(), packer.size());
+  RpcDecoder<> decoder(dummy_transport);
+
+  DecoderTester dt(decoder);
+
+  while (!decoder.packet_incoming()) {
+    Serial.println("Packet not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  dt.first_response_info();
+
+  while (!decoder.response_queued()) {
+    Serial.println("1st response not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  size_t pack_size = decoder.get_packet_size();
+  Serial.print("1st Packet size: ");
+  Serial.println(pack_size);
+
+  dt.first_response_info();
+
+  if ((dt.get_response_offset()!=pack_size)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+    Serial.println("ERROR parsing 1st response\n");
+    return;
+  }
+
+  Serial.print("Getting response (2nd packet) size: ");
+  Serial.println(dt.get_response_size());
+
+  int res;
+  RpcError _err;
+  dt.get_response(_id, res, _err);
+
+  Serial.print("Result: ");
+  Serial.println(res);
+
+  dt.print_raw_buf();
+
+  Serial.println("-- Done --\n");
+}
+
+
+void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _id) {
+  Serial.println(label);
+
+  print_buf();
+  DummyTransport dummy_transport(packer.data(), packer.size());
+  RpcDecoder<> decoder(dummy_transport);
+
+  DecoderTester dt(decoder);
+
+  while (!decoder.packet_incoming()) {
+    Serial.println("Packet not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  dt.first_response_info();
+
+  while (!decoder.response_queued()) {
+    Serial.println("1st response not ready");
+    decoder.decode();
+    delay(50);
+  }
+
+  size_t pack_size = decoder.get_packet_size();
+  Serial.print("1st Packet size: ");
+  Serial.println(pack_size);
+
+  dt.first_response_info();
+
+  if ((dt.get_response_offset()!=0)||(dt.get_response_size()!=expected_size)) {
+    Serial.println("ERROR parsing 1st response\n");
+    return;
+  }
+
+  Serial.print("Getting response size: ");
+  Serial.println(dt.get_response_size());
+
+  int res;
+  RpcError _err;
+  dt.get_response(_id, res, _err);
+
+  Serial.print("Result: ");
+  Serial.println(res);
+
+  dt.print_raw_buf();
+
+  dt.first_response_info();
+
+  Serial.println("-- Done --\n");
+}
+
 
 void testNestedArrayRequest() {
   packer.clear();
@@ -166,6 +330,63 @@ void testMultipleRpcPackets() {
 
 }
 
+// Multiple RPCs in one buffer. Pop the 1st request and then the 2nd response
+void testPopRpcPackets() {
+  packer.clear();
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t par_sz(2);
+  MsgPack::arr_size_t resp_sz(4);
+  MsgPack::object::nil_t nil;
+
+  // 1st request
+  packer.serialize(req_sz, 0, 1, "sum", par_sz, 10, 20);
+  // 2nd response
+  packer.serialize(resp_sz, 1, 1, nil, 42);
+  // 3rd request
+  packer.serialize(req_sz, 0, 2, "echo", par_sz, "Hello", true);
+
+  runDecoderPopFirstTest("== Test: Pop-first packet ==", 5);
+
+}
+
+// Multiple RPCs in one buffer. Get the response in the buffer
+void testGetResponsePacket() {
+  packer.clear();
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t par_sz(2);
+  MsgPack::arr_size_t resp_sz(4);
+  MsgPack::object::nil_t nil;
+
+  // 1st request
+  packer.serialize(req_sz, 0, 1, "sum", par_sz, 10, 20);
+  // 2nd response
+  packer.serialize(resp_sz, 1, 1, nil, 101);
+  // 3rd request
+  packer.serialize(req_sz, 0, 2, "echo", par_sz, "Hello", true);
+
+  runDecoderGetResponseTest("== Test: Get response packet ==", 5, 1);
+
+}
+
+// Multiple RPCs in one buffer. The response is top of the buffer
+void testGetTopResponsePacket() {
+  packer.clear();
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t par_sz(2);
+  MsgPack::arr_size_t resp_sz(4);
+  MsgPack::object::nil_t nil;
+
+  // 1st response
+  packer.serialize(resp_sz, 1, 1, nil, 101);
+  // 2nd request
+  packer.serialize(req_sz, 0, 2, "echo", par_sz, "Hello", true);
+  // 3rd request
+  packer.serialize(req_sz, 0, 1, "sum", par_sz, 30, 30);
+
+  runDecoderGetTopResponseTest("== Test: Get top response packet ==", 5, 1);
+
+}
+
 // Binary parameter (e.g., binary blob)
 void testBinaryParam() {
   packer.clear();
@@ -225,6 +446,9 @@ void setup() {
   testDeepNestedStructure();
   testArrayOfMapsResponse();
   testMultipleRpcPackets();
+  testPopRpcPackets();
+  testGetResponsePacket();
+  testGetTopResponsePacket();
   testBinaryParam();
   testExtensionParam();
   testCombinedComplexBuffer();

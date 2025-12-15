@@ -15,11 +15,11 @@
 #include "MsgPack.h"
 #include "transport.h"
 #include "rpclite_utils.h"
+#include "error.h"
 
 using namespace RpcUtils::detail;
 
 #define MIN_RPC_BYTES   4
-#define CHUNK_SIZE      32
 
 template<size_t BufferSize = DECODER_BUFFER_SIZE>
 class RpcDecoder {
@@ -57,12 +57,12 @@ public:
     template<typename RType>
     bool get_response(const uint32_t msg_id, RType& result, RpcError& error) {
 
-        if (!packet_incoming() || _packet_type!=RESP_MSG) return false;
+        if (!response_queued()) return false;
 
         MsgPack::Unpacker unpacker;
         unpacker.clear();
 
-        if (!unpacker.feed(_raw_buffer, _packet_size)) return false;
+        if (!unpacker.feed(_raw_buffer + _response_offset, _response_size)) return false;
 
         MsgPack::arr_size_t resp_size;
         int resp_type;
@@ -78,7 +78,9 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected response type";
-            discard();
+            consume(_response_size, _response_offset);
+            if (_response_offset == 0) reset_packet();
+            _discarded_packets++;
             return true;
         }
 
@@ -86,7 +88,9 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected RPC response size";
-            discard();
+            consume(_response_size, _response_offset);
+            if (_response_offset == 0) reset_packet();
+            _discarded_packets++;
             return true;
         }
 
@@ -95,20 +99,25 @@ public:
             if (!unpacker.deserialize(nil, result)) {
                 error.code = PARSING_ERR;
                 error.traceback = "Result not parsable (check type)";
-                discard();
+                consume(_response_size, _response_offset);
+                if (_response_offset == 0) reset_packet();
+                _discarded_packets++;
                 return true;
             }
         } else {                        // RPC returned an error
             if (!unpacker.deserialize(error, nil)) {
                 error.code = PARSING_ERR;
                 error.traceback = "RPC Error not parsable (check type)";
-                discard();
+                consume(_response_size, _response_offset);
+                if (_response_offset == 0) reset_packet();
+                _discarded_packets++;
                 return true;
             }
         }
 
-        consume(_packet_size);
-        reset_packet();
+        if (_response_offset == 0) reset_packet();
+        consume(_response_size, _response_offset);
+
         return true;
     }
 
@@ -188,37 +197,50 @@ public:
 
     void parse_packet(){
 
-        if (packet_incoming()){return;}
+        size_t offset = 0;
+
+        if (packet_incoming()) {
+            if (response_queued()) return;  // parsing complete
+            offset = _response_offset;      // looking for a RESP
+        }
 
         size_t bytes_checked = 0;
         size_t container_size;
         int type;
         MsgPack::Unpacker unpacker;
 
-        while (bytes_checked < _bytes_stored){
+        while (bytes_checked + offset < _bytes_stored){
             bytes_checked++;
             unpacker.clear();
-            if (!unpacker.feed(_raw_buffer, bytes_checked)) continue;
+            if (!unpacker.feed(_raw_buffer + offset, bytes_checked)) continue;
 
             if (unpackTypedArray(unpacker, container_size, type)) {
 
                 if (type != CALL_MSG && type != RESP_MSG && type != NOTIFY_MSG) {
-                    consume(bytes_checked);
+                    consume(bytes_checked, offset);
                     _discarded_packets++;
                     break; // Not a valid RPC type (could be type=WRONG_MSG)
                 }
 
                 if ((type == CALL_MSG && container_size != REQUEST_SIZE) || (type == RESP_MSG && container_size != RESPONSE_SIZE) || (type == NOTIFY_MSG && container_size != NOTIFY_SIZE)) {
-                    consume(bytes_checked);
+                    consume(bytes_checked, offset);
                     _discarded_packets++;
                     break; // Not a valid RPC format
                 }
 
-                _packet_type = type;
-                _packet_size = bytes_checked;
+                if (offset == 0) {
+                    _packet_type = type;
+                    _packet_size = bytes_checked;
+                }
+
+                if (type == RESP_MSG) {
+                    _response_offset = offset;
+                    _response_size = bytes_checked; // response queued
+                } else {
+                    _response_offset = offset + bytes_checked;
+                }
+
                 break;
-            } else {
-                continue;
             }
 
         }
@@ -226,6 +248,10 @@ public:
     }
 
     bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
+
+    bool response_queued() const {
+        return _response_size > 0;
+    }
 
     int packet_type() const { return _packet_type; }
 
@@ -243,6 +269,8 @@ private:
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
+    size_t _response_offset = 0;
+    size_t _response_size = 0;
     uint32_t _msg_id = 0;
     uint32_t _discarded_packets = 0;
 
@@ -289,18 +317,29 @@ private:
         _packet_size = 0;
     }
 
-size_t consume(size_t size, size_t offset = 0) {
-    // Boundary checks
-    if (offset + size > _bytes_stored || size == 0) return 0;
-    
-    size_t remaining_bytes = _bytes_stored - size;
-    for (size_t i=offset; i<remaining_bytes; i++){
-        _raw_buffer[i] = _raw_buffer[i+size];
+    void reset_response() {
+        _response_offset = 0;
+        _response_size = 0;
     }
 
-    _bytes_stored = remaining_bytes;
-    return size;
-}
+    size_t consume(size_t size, size_t offset = 0) {
+        // Boundary checks
+        if (offset + size > _bytes_stored || size == 0) return 0;
+
+        size_t remaining_bytes = _bytes_stored - size;
+        for (size_t i=offset; i<remaining_bytes; i++){
+            _raw_buffer[i] = _raw_buffer[i+size];
+        }
+
+        if (_response_offset >= offset + size) {
+            _response_offset -= size;
+        } else {
+            reset_response();
+        }
+
+        _bytes_stored = remaining_bytes;
+        return size;
+    }
 
 };
 
