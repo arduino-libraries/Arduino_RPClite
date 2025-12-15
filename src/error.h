@@ -14,6 +14,9 @@
 
 #include <utility>
 
+// MsgPack log level
+#define DEBUGLOG_DEFAULT_LOG_LEVEL_WARN
+
 #include "MsgPack.h"
 
 #define NO_ERR                   0x00
