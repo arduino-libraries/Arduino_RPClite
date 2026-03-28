@@ -247,6 +247,12 @@ public:
 
         }
 
+        if ((bytes_checked + offset >= _bytes_stored) && (type != CALL_MSG && type != RESP_MSG && type != NOTIFY_MSG)) {
+          // Post-loop cleanup
+           consume(bytes_checked, offset);
+           _discarded_packets++;
+        }
+
     }
 
     bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
@@ -304,8 +310,10 @@ private:
             buffer[i] = _raw_buffer[i];
         }
 
+        // Determine packet size before reset
+        size_t result = consume(packet_size);
         reset_packet();
-        return consume(packet_size);
+        return result;
     }
 
     void discard() {
