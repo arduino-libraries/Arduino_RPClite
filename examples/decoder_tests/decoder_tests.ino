@@ -33,15 +33,15 @@ void runDecoderTest(const char* label) {
 
   print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<> decoder(dummy_transport);
+  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
 
-  while (!decoder.packet_incoming()) {
+  while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
-  size_t pack_size = decoder.get_packet_size();
+  size_t pack_size = decoder->get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
@@ -53,25 +53,25 @@ void runDecoderConsumeTest(const char* label, size_t expected_2nd_pack_size) {
 
   print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<> decoder(dummy_transport);
+  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
 
-  DecoderTester dt(decoder);
+  DecoderTester dt(*decoder);
 
-  while (!decoder.packet_incoming()) {
+  while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
   dt.first_response_info();
 
-  while (!decoder.response_queued()) {
+  while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
-  size_t pack_size = decoder.get_packet_size();
+  size_t pack_size = decoder->get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
@@ -97,25 +97,25 @@ void runDecoderPopFirstTest(const char* label, size_t expected_2nd_pack_size) {
 
   print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<> decoder(dummy_transport);
+  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
 
-  DecoderTester dt(decoder);
+  DecoderTester dt(*decoder);
 
-  while (!decoder.packet_incoming()) {
+  while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
-  while (!decoder.response_queued()) {
+  while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
   dt.first_response_info();
 
-  size_t pack_size = decoder.get_packet_size();
+  size_t pack_size = decoder->get_packet_size();
   Serial.print("Consuming 1st Packet of size: ");
   Serial.println(pack_size);
   dt.pop_first();
@@ -144,25 +144,25 @@ void runDecoderGetResponseTest(const char* label, size_t expected_2nd_pack_size,
 
   print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<> decoder(dummy_transport);
+  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
 
-  DecoderTester dt(decoder);
+  DecoderTester dt(*decoder);
 
-  while (!decoder.packet_incoming()) {
+  while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
   dt.first_response_info();
 
-  while (!decoder.response_queued()) {
+  while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
-  size_t pack_size = decoder.get_packet_size();
+  size_t pack_size = decoder->get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
@@ -194,25 +194,25 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
 
   print_buf();
   DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<> decoder(dummy_transport);
+  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
 
-  DecoderTester dt(decoder);
+  DecoderTester dt(*decoder);
 
-  while (!decoder.packet_incoming()) {
+  while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
   dt.first_response_info();
 
-  while (!decoder.response_queued()) {
+  while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
-    decoder.decode();
+    decoder->decode();
     delay(50);
   }
 
-  size_t pack_size = decoder.get_packet_size();
+  size_t pack_size = decoder->get_packet_size();
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
@@ -436,7 +436,7 @@ void testCombinedComplexBuffer() {
 void setup() {
   Serial.begin(115200);
   while(!Serial);
-  
+
   delay(1000);
   Serial.println("=== RPC Decoder Nested Tests ===");
 

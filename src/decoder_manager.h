@@ -18,58 +18,53 @@
 #include "transport.h"
 #include "decoder.h"
 
-template<size_t MaxTransports = RPCLITE_MAX_TRANSPORTS>
 class RpcDecoderManager {
+
 public:
-    static RpcDecoder<>& getDecoder(ITransport& transport) {
+
+    RpcDecoderManager(const RpcDecoderManager&) = delete;
+    RpcDecoderManager& operator=(const RpcDecoderManager&) = delete;
+
+    RpcDecoder<>* getDecoder(ITransport& transport) {
         for (auto& entry : decoders_) {
             if (entry.transport == &transport) {
-                return *entry.decoder;
+                return entry.decoder;
             }
 
             if (entry.transport == nullptr) {
                 entry.transport = &transport;
-                // In-place construct
-                entry.decoder = new (&entry.decoder_storage.instance) RpcDecoder<>(transport);
+                entry.decoder = new RpcDecoder<>(transport);
+
                 decoders_count++;
-                return *entry.decoder;
+                return entry.decoder;
             }
         }
 
-        // No slot available — simple trap for now
-        while (true);
+        return nullptr;
     }
 
-    static size_t getDecodersCount() {
+    size_t getDecodersCount() const {
         return decoders_count;
     }
 
-private:
-    struct DecoderStorage {
-        union {
-            RpcDecoder<> instance;
-            uint8_t raw[sizeof(RpcDecoder<>)]{};
-        };
+    static RpcDecoderManager& getInstance() {
+        static RpcDecoderManager instance; // thread-safe in C++11+
+        return instance;
+    }
 
-        DecoderStorage() {}
-        ~DecoderStorage() {}
-    };
+private:
+
+    RpcDecoderManager(){};
+
+    static RpcDecoderManager* instance;
 
     struct Entry {
         ITransport* transport = nullptr;
         RpcDecoder<>* decoder = nullptr;
-        DecoderStorage decoder_storage;
     };
 
-    static std::array<Entry, MaxTransports> decoders_;
-    static size_t decoders_count;
+    std::array<Entry, RPCLITE_MAX_TRANSPORTS> decoders_;
+    size_t decoders_count{0};
 };
-
-// Definition of the static member
-template<size_t MaxTransports>
-std::array<typename RpcDecoderManager<MaxTransports>::Entry, MaxTransports> RpcDecoderManager<MaxTransports>::decoders_;
-
-template<size_t MaxTransports>
-size_t RpcDecoderManager<MaxTransports>::decoders_count = 0;
 
 #endif //RPCLITE_DECODER_MANAGER_H

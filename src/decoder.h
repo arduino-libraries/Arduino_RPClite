@@ -26,8 +26,12 @@ using namespace RpcUtils::detail;
 template<size_t BufferSize = DECODER_BUFFER_SIZE>
 class RpcDecoder {
 
-public:
     explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}
+
+public:
+
+    RpcDecoder(const RpcDecoder&) = delete;
+    RpcDecoder& operator=(const RpcDecoder&) = delete;
 
     template<typename... Args>
     bool send_call(const int call_type, const MsgPack::str_t& method, uint32_t& msg_id, Args&&... args) {
@@ -263,6 +267,7 @@ public:
 
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
+    friend class RpcDecoderManager;
     friend class DecoderTester;
 
 private:

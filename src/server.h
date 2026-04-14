@@ -25,7 +25,9 @@
 class RPCServer {
 
 public:
-    explicit RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
+    explicit RPCServer(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
+
+    operator bool() const {return decoder != nullptr;}
 
     template<typename F>
     bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t tag=""){

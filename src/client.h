@@ -16,12 +16,14 @@
 
 
 class RPCClient {
-    RpcDecoder<>* decoder;
+    RpcDecoder<>* decoder=nullptr;
 
 public:
     RpcError lastError;
 
-    explicit RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
+    explicit RPCClient(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
+
+    operator bool() const {return decoder != nullptr;}
 
     template<typename... Args>
     void notify(const MsgPack::str_t& method, Args&&... args)  {
