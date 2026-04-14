@@ -46,12 +46,10 @@ float multip(float a, float b) {
 
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    Serial.begin(9600);
-    while(!Serial);
+    Serial.begin(115200);
 
     server.bind("add", add);
 

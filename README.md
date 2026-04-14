@@ -21,10 +21,7 @@ String loopback(String message){
 
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
-
     Serial.begin(9600);
-    while(!Serial);
 
     server.bind("add", add);
     server.bind("loopback", loopback);
@@ -48,12 +45,10 @@ RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.begin(9600);
-    while(!Serial);
 }
 
 void loop() {

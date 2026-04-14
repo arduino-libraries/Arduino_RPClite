@@ -16,13 +16,11 @@ RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
 
     pinMode(LED_BUILTIN, OUTPUT);
     delay(10);
 
     Serial.begin(115200);
-    while(!Serial);
 }
 
 void blink_before(){
