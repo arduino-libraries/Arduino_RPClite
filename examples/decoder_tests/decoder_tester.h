@@ -67,6 +67,16 @@ public:
     Serial.println("");
   }
 
+  void reset() {
+    decoder._bytes_stored = 0;
+    decoder._packet_type = NO_MSG;
+    decoder._packet_size = 0;
+    decoder._response_offset = 0;
+    decoder._response_size = 0;
+    decoder._msg_id = 0;
+    decoder._discarded_packets = 0;
+  }
+
 };
 
 #endif // RPCLITE_DECODER_TESTER_H

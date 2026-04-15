@@ -15,6 +15,9 @@
 
 // Shorthand
 MsgPack::Packer packer;
+DummyTransport dummy_transport(packer.data(), packer.size());
+RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
+DecoderTester tester(*decoder);
 
 void print_buf() {
     Serial.print("buf size: ");
@@ -32,8 +35,8 @@ void runDecoderTest(const char* label) {
   Serial.println(label);
 
   print_buf();
-  DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
 
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
@@ -52,10 +55,8 @@ void runDecoderConsumeTest(const char* label, size_t expected_2nd_pack_size) {
   Serial.println(label);
 
   print_buf();
-  DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
-
-  DecoderTester dt(*decoder);
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
 
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
@@ -63,7 +64,7 @@ void runDecoderConsumeTest(const char* label, size_t expected_2nd_pack_size) {
     delay(50);
   }
 
-  dt.first_response_info();
+  tester.first_response_info();
 
   while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
@@ -75,19 +76,19 @@ void runDecoderConsumeTest(const char* label, size_t expected_2nd_pack_size) {
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
-  dt.first_response_info();
+  tester.first_response_info();
 
-  if ((dt.get_response_offset()!=pack_size)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+  if ((tester.get_response_offset()!=pack_size)||(tester.get_response_size()!=expected_2nd_pack_size)) {
     Serial.println("ERROR parsing 1st response\n");
     return;
   }
 
   Serial.print("Consuming 2nd packet of given size: ");
-  Serial.println(dt.get_response_size());
+  Serial.println(tester.get_response_size());
 
-  dt.crop_bytes(dt.get_response_size(), dt.get_response_offset());
+  tester.crop_bytes(tester.get_response_size(), tester.get_response_offset());
 
-  dt.print_raw_buf();
+  tester.print_raw_buf();
 
   Serial.println("-- Done --\n");
 }
@@ -96,10 +97,8 @@ void runDecoderPopFirstTest(const char* label, size_t expected_2nd_pack_size) {
   Serial.println(label);
 
   print_buf();
-  DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
-
-  DecoderTester dt(*decoder);
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
 
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
@@ -113,28 +112,28 @@ void runDecoderPopFirstTest(const char* label, size_t expected_2nd_pack_size) {
     delay(50);
   }
 
-  dt.first_response_info();
+  tester.first_response_info();
 
   size_t pack_size = decoder->get_packet_size();
   Serial.print("Consuming 1st Packet of size: ");
   Serial.println(pack_size);
-  dt.pop_first();
-  dt.print_raw_buf();
+  tester.pop_first();
+  tester.print_raw_buf();
 
-  dt.first_response_info();
+  tester.first_response_info();
 
-  if ((dt.get_response_offset()!=0)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+  if ((tester.get_response_offset()!=0)||(tester.get_response_size()!=expected_2nd_pack_size)) {
     Serial.println("ERROR moving 1st response\n");
     return;
   }
 
   Serial.print("Consuming 2nd packet of given size: ");
-  Serial.println(dt.get_response_size());
+  Serial.println(tester.get_response_size());
 
-  dt.crop_bytes(dt.get_response_size(), dt.get_response_offset());
+  tester.crop_bytes(tester.get_response_size(), tester.get_response_offset());
 
-  dt.print_raw_buf();
-  dt.first_response_info();
+  tester.print_raw_buf();
+  tester.first_response_info();
 
   Serial.println("-- Done --\n");
 }
@@ -143,10 +142,8 @@ void runDecoderGetResponseTest(const char* label, size_t expected_2nd_pack_size,
   Serial.println(label);
 
   print_buf();
-  DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
-
-  DecoderTester dt(*decoder);
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
 
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
@@ -154,7 +151,7 @@ void runDecoderGetResponseTest(const char* label, size_t expected_2nd_pack_size,
     delay(50);
   }
 
-  dt.first_response_info();
+  tester.first_response_info();
 
   while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
@@ -166,24 +163,24 @@ void runDecoderGetResponseTest(const char* label, size_t expected_2nd_pack_size,
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
-  dt.first_response_info();
+  tester.first_response_info();
 
-  if ((dt.get_response_offset()!=pack_size)||(dt.get_response_size()!=expected_2nd_pack_size)) {
+  if ((tester.get_response_offset()!=pack_size)||(tester.get_response_size()!=expected_2nd_pack_size)) {
     Serial.println("ERROR parsing 1st response\n");
     return;
   }
 
   Serial.print("Getting response (2nd packet) size: ");
-  Serial.println(dt.get_response_size());
+  Serial.println(tester.get_response_size());
 
   int res;
   RpcError _err;
-  dt.get_response(_id, res, _err);
+  tester.get_response(_id, res, _err);
 
   Serial.print("Result: ");
   Serial.println(res);
 
-  dt.print_raw_buf();
+  tester.print_raw_buf();
 
   Serial.println("-- Done --\n");
 }
@@ -193,10 +190,8 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
   Serial.println(label);
 
   print_buf();
-  DummyTransport dummy_transport(packer.data(), packer.size());
-  RpcDecoder<>* decoder = RpcDecoderManager::getInstance().getDecoder(dummy_transport);
-
-  DecoderTester dt(*decoder);
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
 
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
@@ -204,7 +199,7 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
     delay(50);
   }
 
-  dt.first_response_info();
+  tester.first_response_info();
 
   while (!decoder->response_queued()) {
     Serial.println("1st response not ready");
@@ -216,26 +211,26 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
   Serial.print("1st Packet size: ");
   Serial.println(pack_size);
 
-  dt.first_response_info();
+  tester.first_response_info();
 
-  if ((dt.get_response_offset()!=0)||(dt.get_response_size()!=expected_size)) {
+  if ((tester.get_response_offset()!=0)||(tester.get_response_size()!=expected_size)) {
     Serial.println("ERROR parsing 1st response\n");
     return;
   }
 
   Serial.print("Getting response size: ");
-  Serial.println(dt.get_response_size());
+  Serial.println(tester.get_response_size());
 
   int res;
   RpcError _err;
-  dt.get_response(_id, res, _err);
+  tester.get_response(_id, res, _err);
 
   Serial.print("Result: ");
   Serial.println(res);
 
-  dt.print_raw_buf();
+  tester.print_raw_buf();
 
-  dt.first_response_info();
+  tester.first_response_info();
 
   Serial.println("-- Done --\n");
 }
@@ -392,7 +387,7 @@ void testBinaryParam() {
   packer.clear();
   MsgPack::arr_size_t req_sz(4);
 
-  const MsgPack::bin_t<uint8_t> bin_data {0x01, 0x23, 0x45, 0x67, 0x89};
+  MsgPack::bin_t<uint8_t> bin_data {0x01, 0x23, 0x45, 0x67, 0x89};
   packer.serialize(req_sz, 0, 3, "binary", bin_data);
 
   runDecoderTest("== Test: Binary Parameter ==");
@@ -403,8 +398,8 @@ void testExtensionParam() {
   packer.clear();
   MsgPack::arr_size_t req_sz(4);
 
-  const int8_t ext_type = 42;
-  const uint8_t ext_payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
+  int8_t ext_type = 42;
+  uint8_t ext_payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
   packer.serialize(req_sz, 0, 4, "extension", MsgPack::object::ext(ext_type, ext_payload, sizeof(ext_payload)));
 
   runDecoderTest("== Test: Extension Parameter ==");
@@ -418,8 +413,8 @@ void testCombinedComplexBuffer() {
   MsgPack::object::nil_t nil;
   MsgPack::arr_size_t resp_sz(4);
 
-  const MsgPack::bin_t<uint8_t> bin_blob {0xAA, 0xBB, 0xCC};
-  const uint8_t ext_blob[] = {0xFE, 0xED};
+  MsgPack::bin_t<uint8_t> bin_blob {0xAA, 0xBB, 0xCC};
+  uint8_t ext_blob[] = {0xFE, 0xED};
 
   // Request with bin + ext + normal
   packer.serialize(req_sz, 0, 5, "combo", par_sz,

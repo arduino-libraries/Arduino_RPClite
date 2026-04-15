@@ -25,6 +25,12 @@ class DummyTransport: public ITransport {
 
         void begin(){}
 
+        void reset(const uint8_t* buf, size_t size) {
+          _dummy_buf = buf;
+          _dummy_buf_size = size;
+          r_size = 0;
+        }
+
         bool available() override {
             return _dummy_buf_size > 0;
         }
