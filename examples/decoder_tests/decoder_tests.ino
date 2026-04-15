@@ -235,6 +235,53 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
   Serial.println("-- Done --\n");
 }
 
+void testWelcomeString() {
+  packer.clear();
+
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t param_sz(1);
+
+  uint8_t ascii[] = {65, 32, 119, 101, 108, 99, 111, 109, 101, 32, 109, 101, 115, 115, 97, 103, 101};
+  for (auto& c : ascii) { packer.serialize(c); }
+  packer.serialize(req_sz, 0, 1, "simple", param_sz, 4);
+
+  Serial.println("RpcDecoder should discard pure ascii streams without hanging");
+
+  runDecoderTest("== Test: Welcome String ==");
+}
+
+void testInvalidArray() {
+  packer.clear();
+
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t param_sz(1);
+  int invalid_type = 5;
+  packer.serialize(req_sz, invalid_type, 1, "invalid", param_sz, 5);
+
+  packer.serialize(req_sz, 0, 1, "simple", param_sz, 4);
+
+  Serial.println("RpcDecoder should discard invalid arrays");
+
+  runDecoderTest("== Test: Invalid array before request ==");
+}
+
+void testAsciiInTheMiddle() {
+    packer.clear();
+
+  MsgPack::arr_size_t req_sz(4);
+  MsgPack::arr_size_t resp_sz(4);
+  MsgPack::arr_size_t param_sz(1);
+  MsgPack::object::nil_t nil;
+
+  packer.serialize(req_sz, 0, 1, "simple", param_sz, 4);
+  uint8_t ascii[] = {65, 32, 119, 101, 108, 99, 111, 109, 101, 32, 109, 101, 115, 115, 97, 103, 101};
+  for (auto& c : ascii) { packer.serialize(c); }
+  packer.serialize(resp_sz, 1, 10, nil, true);
+
+  Serial.println("RpcDecoder should discard pure ascii in the middle and recover both the request and the response");
+
+  runDecoderConsumeTest("== Test: Request - ASCII - Response ==", 5);
+}
 
 void testNestedArrayRequest() {
   packer.clear();
@@ -433,6 +480,12 @@ void setup() {
   while(!Serial);
 
   delay(1000);
+
+  Serial.println("=== RPC Decoder Error Tests ===");
+  testWelcomeString();
+  testInvalidArray();
+  testAsciiInTheMiddle();
+  
   Serial.println("=== RPC Decoder Nested Tests ===");
 
   testNestedArrayRequest();
