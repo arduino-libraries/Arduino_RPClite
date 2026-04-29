@@ -32,9 +32,6 @@ jobs:
         - source-path: ./
         - name: MsgPack
       SKETCH_PATHS: |
-        - examples/decoder_tests
-        - examples/dispatcher_example
-        - examples/wrapper_example
         - examples/rpc_lite_client
         - examples/rpc_lite_server
       SKETCHES_REPORTS_PATH: sketches-reports

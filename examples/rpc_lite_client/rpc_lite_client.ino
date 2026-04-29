@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -15,77 +15,38 @@ SerialTransport transport(Serial1);
 RPCClient client(transport);
 
 void setup() {
-    Serial1.begin(115200);
-    while(!Serial1);
+    Serial1.begin(115200);      // eg Nano ESP32 use Serial1.begin(115200, SERIAL_8N1, D4, D5);
+    Serial1.println("Hello from NANO ESP32");   // this welcome message should be skipped by the server
 
     pinMode(LED_BUILTIN, OUTPUT);
     delay(10);
 
     Serial.begin(115200);
-    while(!Serial);
 }
 
 void blink_before(){
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(200);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(200);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200);
-    digitalWrite(LED_BUILTIN, HIGH);
-    delay(200);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(200);
+    static bool _blink = true;
+    for (int i = 0; i < 6; i++)
+    {
+        digitalWrite(LED_BUILTIN, _blink);
+        delay(200);
+        _blink = !_blink;
+    }
 }
 
 void loop() {
     float result;
     blink_before();
 
-    String str_res;
-    bool ok = client.call("loopback", str_res, "Sending a greeting");
-    Serial.println(str_res);
-
-    ok = client.call("mult", result, 2.0, 3.0);
-
-    if (ok) {
-        Serial.print("Result: ");
-        Serial.println(result);
-    }
-
-    ok = client.call("divi", result, 2.0, 0.0);
-    if (!ok) {
-        Serial.print("Testing Server-side exception OK. ERR code: ");
-        Serial.print(client.lastError.code);
-        Serial.print(" ERR trace: ");
-        Serial.println(client.lastError.traceback);
-    }
-
-    int rand_int;
-    ok = client.call("get_rand", rand_int);
-
-    if (ok) {
-        Serial.print("Random int from server: ");
-        Serial.println(rand_int);
-    }
-
-    client.notify("blink");
-    Serial.println("Sent a blink notification");
-
-    int duration_ms = 100;
-    client.notify("blink", duration_ms);
-    Serial.println("Sent a 100ms blink notification");
-
-    MsgPack::object::nil_t out;
-    ok = client.call("blink", out);
-    Serial.print("Sent a blink RPC -> ");
+    bool ok = client.call("multiply", result, 2.0, 3.0);
 
     if (ok) {
         Serial.println("Server returns without issues");
-    } else {
-        Serial.println("Server could not handle a notification as a call");
+        Serial.print("Result: ");
+        Serial.println(result);
+    } else
+    {
+        Serial.println("Server could not handle a call");
     }
 
 }
