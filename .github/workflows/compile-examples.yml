@@ -28,9 +28,11 @@ jobs:
 
     env:
       LIBRARIES: |
-        # Install the NetworkConfigurator library from the repository
+        # Install the libraries from the local path
         - source-path: ./
         - name: MsgPack
+        - name: Arduino_RouterBridge
+
       SKETCH_PATHS: |
         - examples/rpc_lite_client
         - examples/rpc_lite_server
