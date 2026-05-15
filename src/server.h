@@ -56,7 +56,8 @@ public:
 
         const MsgPack::str_t method = decoder->fetch_rpc_method();
 
-        if (method == "" || !dispatcher.hasTag(method, tag)) return false;
+        if (method == "") return false;
+        if (tag != "" && !dispatcher.hasTag(method, tag)) return false;
 
         req.size = decoder->get_request(req.buffer, RpcSize);
         return req.size > 0;
