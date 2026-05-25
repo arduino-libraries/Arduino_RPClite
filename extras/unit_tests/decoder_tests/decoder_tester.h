@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+  Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -65,6 +65,16 @@ public:
         Serial.print(" ");
     }
     Serial.println("");
+  }
+
+  void reset() {
+    decoder._bytes_stored = 0;
+    decoder._packet_type = NO_MSG;
+    decoder._packet_size = 0;
+    decoder._response_offset = 0;
+    decoder._response_size = 0;
+    decoder._msg_id = 0;
+    decoder._discarded_packets = 0;
   }
 
 };

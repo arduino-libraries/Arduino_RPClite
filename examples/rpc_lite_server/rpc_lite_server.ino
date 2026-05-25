@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -14,57 +14,16 @@
 SerialTransport transport(Serial1);
 RPCServer server(transport);
 
-int add(int a, int b){
-    return a+b;
-}
-
-int add2(int a, int b){
-    return a+b;
-}
-
-String greet(){
-    return String("Hello Friend");
-}
-
-String loopback(String message){
-    return message;
-}
-
-class multiplier {
-public:
-
-    multiplier(){}
-    static int mult(int a, int b){
-        return a*b;
-    }
-};
-
-
-float multip(float a, float b) {
+float multiply(float a, float b) {
     return a*b;
 }
 
 void setup() {
-    Serial1.begin(115200);
-    while(!Serial1);
+    Serial1.begin(115200);      // eg Nano ESP32 use Serial1.begin(115200, SERIAL_8N1, D4, D5);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
-    Serial.begin(9600);
-    while(!Serial);
-
-    server.bind("add", add);
-
-    if (!server.bind("add", add2)){
-        Serial.println("server refused to bind same name twice");
-    }
-
-    server.bind("greet", greet);
-    server.bind("loopback", loopback);
-    server.bind("another_greeting", [] {return MsgPack::str_t ("This is a lambda greeting");});
-    server.bind("object_multi", &multiplier::mult);
-    server.bind("multip", multip);
-
+    server.bind("multiply", multiply);
 }
 
 void blink_before(){

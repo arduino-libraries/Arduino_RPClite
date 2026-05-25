@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -26,8 +26,12 @@ using namespace RpcUtils::detail;
 template<size_t BufferSize = DECODER_BUFFER_SIZE>
 class RpcDecoder {
 
-public:
     explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}
+
+public:
+
+    RpcDecoder(const RpcDecoder&) = delete;
+    RpcDecoder& operator=(const RpcDecoder&) = delete;
 
     template<typename... Args>
     bool send_call(const int call_type, const MsgPack::str_t& method, uint32_t& msg_id, Args&&... args) {
@@ -216,18 +220,18 @@ public:
             unpacker.clear();
             if (!unpacker.feed(_raw_buffer + offset, bytes_checked)) continue;
 
+            if (unpacker.isUInt7()) {   // let the ascii pass
+                consume(1, offset);
+                bytes_checked--;
+                continue;
+            }
+
             if (unpackTypedArray(unpacker, container_size, type)) {
 
-                if (type != CALL_MSG && type != RESP_MSG && type != NOTIFY_MSG) {
+                if (!isValidRpc(type, container_size)) {
                     consume(bytes_checked, offset);
                     _discarded_packets++;
-                    break; // Not a valid RPC type (could be type=WRONG_MSG)
-                }
-
-                if ((type == CALL_MSG && container_size != REQUEST_SIZE) || (type == RESP_MSG && container_size != RESPONSE_SIZE) || (type == NOTIFY_MSG && container_size != NOTIFY_SIZE)) {
-                    consume(bytes_checked, offset);
-                    _discarded_packets++;
-                    break; // Not a valid RPC format
+                    break; // Not a valid rpclib format
                 }
 
                 if (offset == 0) {
@@ -239,7 +243,7 @@ public:
                     _response_offset = offset;
                     _response_size = bytes_checked; // response queued
                 } else {
-                    _response_offset = offset + bytes_checked;
+                    _response_offset = offset + bytes_checked;  // keep on looking for a RESP_MSG
                 }
 
                 break;
@@ -263,6 +267,7 @@ public:
 
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
+    friend class RpcDecoderManager;
     friend class DecoderTester;
 
 private:

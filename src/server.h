@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -25,7 +25,9 @@
 class RPCServer {
 
 public:
-    explicit RPCServer(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
+    explicit RPCServer(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
+
+    operator bool() const {return decoder != nullptr;}
 
     template<typename F>
     bool bind(const MsgPack::str_t& name, F&& func, MsgPack::str_t tag=""){
@@ -54,7 +56,8 @@ public:
 
         const MsgPack::str_t method = decoder->fetch_rpc_method();
 
-        if (method == "" || !dispatcher.hasTag(method, tag)) return false;
+        if (method == "") return false;
+        if (tag != "" && !dispatcher.hasTag(method, tag)) return false;
 
         req.size = decoder->get_request(req.buffer, RpcSize);
         return req.size > 0;

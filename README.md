@@ -19,16 +19,23 @@ String loopback(String message){
     return message;
 }
 
+class multiplier {
+public:
+
+    multiplier(){}
+    static int mult(int a, int b){
+        return a*b;
+    }
+};
+
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
-
-    Serial.begin(9600);
-    while(!Serial);
+    Serial.begin(115200);
 
     server.bind("add", add);
     server.bind("loopback", loopback);
-
+    server.bind("greeting", [] {return MsgPack::str_t ("This is a lambda function");}); // lambdas
+    server.bind("multiplier", &multiplier::mult); // class methods
 }
 
 void loop() {
@@ -48,12 +55,10 @@ RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);
-    while(!Serial1);
 
     pinMode(LED_BUILTIN, OUTPUT);
 
     Serial.begin(9600);
-    while(!Serial);
 }
 
 void loop() {

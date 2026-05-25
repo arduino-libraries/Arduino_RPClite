@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -16,12 +16,14 @@
 
 
 class RPCClient {
-    RpcDecoder<>* decoder;
+    RpcDecoder<>* decoder=nullptr;
 
 public:
     RpcError lastError;
 
-    explicit RPCClient(ITransport& t) : decoder(&RpcDecoderManager<>::getDecoder(t)) {}
+    explicit RPCClient(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
+
+    operator bool() const {return decoder != nullptr;}
 
     template<typename... Args>
     void notify(const MsgPack::str_t& method, Args&&... args)  {

@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -34,41 +34,37 @@ namespace detail {
 /// --- deserialization helpers --- ///
 ///////////////////////////////////////
 
+inline bool isValidRpc(int type, size_t size) {
+    switch (type) {
+        case CALL_MSG:
+            return size == REQUEST_SIZE;
+        case RESP_MSG:
+            return size == RESPONSE_SIZE;
+        case NOTIFY_MSG:
+            return size == NOTIFY_SIZE;
+        default:
+            return false;
+    }
+}
+
 inline bool unpackObject(MsgPack::Unpacker& unpacker);
 
 
 inline bool unpackTypedArray(MsgPack::Unpacker& unpacker, size_t& size, int& type) {
-
-    if (!unpacker.isArray()) {
-        return false; // Not an array
-    }
-
     MsgPack::arr_size_t sz;
-    unpacker.deserialize(sz);
-    int rpc_type;
+    if (!unpacker.deserialize(sz)) return false;
 
-    size = 0;
-    for (size_t i=0; i<sz.size(); i++){
-        if (i==0) {
-            if (unpacker.isInt() || unpacker.isUInt()) {
-                unpacker.deserialize(rpc_type);
-                type = rpc_type;
-                size++;
-                continue; // the First element must be the type
-            } else {
-                type = WRONG_MSG; // Not a valid type
-            }
-        }
+    size = sz.size();
 
-        if (unpackObject(unpacker)){
-            size++;
-        } else {
-            return false;
+    type = WRONG_MSG;
+    for (size_t i = 0; i < sz.size(); i++) {
+        if (i==0 && unpacker.deserialize(type)) {
+            continue;
         }
+        if (!unpackObject(unpacker)) return false;
     }
 
     return true;
-
 }
 
 inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
@@ -90,7 +86,6 @@ inline bool unpackArray(MsgPack::Unpacker& unpacker, size_t& size) {
     }
 
     return true;
-
 }
 
 inline bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
@@ -112,7 +107,6 @@ inline bool unpackMap(MsgPack::Unpacker& unpacker, size_t& size) {
     }
 
     return true;
-
 }
 
 inline bool unpackObject(MsgPack::Unpacker& unpacker){

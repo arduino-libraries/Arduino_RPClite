@@ -1,7 +1,7 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -24,6 +24,12 @@ class DummyTransport: public ITransport {
         DummyTransport(const uint8_t* buf, size_t size): _dummy_buf(buf), _dummy_buf_size(size){}
 
         void begin(){}
+
+        void reset(const uint8_t* buf, size_t size) {
+          _dummy_buf = buf;
+          _dummy_buf_size = size;
+          r_size = 0;
+        }
 
         bool available() override {
             return _dummy_buf_size > 0;
