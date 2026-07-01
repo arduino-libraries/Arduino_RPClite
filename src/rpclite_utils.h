@@ -161,8 +161,7 @@ inline bool unpackObject(MsgPack::Unpacker& unpacker){
 
 template<typename T>
 int deserialize_single(MsgPack::Unpacker& unpacker, T& value) {
-    if (!unpacker.unpackable(value)) return TYPE_ERROR;
-    unpacker.deserialize(value);
+    if(!unpacker.deserialize(value)) return TYPE_ERROR;
     return 0;
 }
 
