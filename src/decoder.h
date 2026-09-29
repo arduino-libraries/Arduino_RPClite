@@ -14,6 +14,8 @@
 // MsgPack log level
 #define DEBUGLOG_DEFAULT_LOG_LEVEL_WARN
 
+#include <cstdint>
+
 #include "MsgPack.h"
 #include "transport.h"
 #include "rpclite_utils.h"
@@ -223,6 +225,7 @@ public:
             if (unpacker.isUInt7()) {   // let the ascii pass
                 consume(1, offset);
                 bytes_checked--;
+                _dropped_bytes++;
                 continue;
             }
 
@@ -267,6 +270,51 @@ public:
 
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
+    void flush()
+    {
+        if (_packet_size>0){_discarded_packets++;}
+        if (_response_size>0){_discarded_packets++;}
+        _dropped_bytes += _bytes_stored;
+
+        _packet_type = NO_MSG;
+        _packet_size = 0;
+        _response_offset = 0;
+        _response_size = 0;
+        _bytes_stored = 0;
+        _transport->flush();
+    }
+
+    void resync() {
+        if (packet_incoming()) return;
+
+        size_t bytes_to_consume = 1;    // 1st byte is always consumed
+        for (size_t i = 1; i < _bytes_stored; i++)
+        {
+            // stop conditions
+            if ((_raw_buffer[i] == 0x94 && _raw_buffer[i+1] == RESP_MSG) ||
+                (_raw_buffer[i] == 0x94 && _raw_buffer[i+1] == CALL_MSG) ||
+                (_raw_buffer[i] == 0x93 && _raw_buffer[i+1] == NOTIFY_MSG)) {
+                break;
+            }
+            bytes_to_consume++;
+        }
+        consume(bytes_to_consume);
+        _dropped_bytes += bytes_to_consume;
+    }
+
+    void discard() {
+        consume(_packet_size);
+        reset_packet();
+        _discarded_packets++;
+    }
+
+    void reset() {
+        flush();
+        _discarded_packets = 0;
+        _dropped_bytes = 0;
+        _msg_id = 0;
+    }
+
     friend class RpcDecoderManager;
     friend class DecoderTester;
 
@@ -280,6 +328,7 @@ private:
     size_t _response_size = 0;
     uint32_t _msg_id = 0;
     uint32_t _discarded_packets = 0;
+    uint32_t _dropped_bytes = 0;
 
     bool buffer_full() const { return _bytes_stored == BufferSize; }
 
@@ -311,12 +360,6 @@ private:
 
         reset_packet();
         return consume(packet_size);
-    }
-
-    void discard() {
-        consume(_packet_size);
-        reset_packet();
-        _discarded_packets++;
     }
 
     void reset_packet() {

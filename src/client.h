@@ -75,6 +75,8 @@ public:
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
+    RpcDecoder<>* get_decoder() {return decoder;}
+
 };
 
 #endif //RPCLITE_CLIENT_H
