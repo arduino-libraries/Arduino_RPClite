@@ -92,6 +92,10 @@ public:
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
+    // Drops all the data received and not yet processed (see RpcDecoder::reset).
+    // Note that client and server on the same transport share the decoder.
+    void reset() { decoder->reset(); }
+
 private:
     RpcDecoder<>* decoder = nullptr;
     RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher{};
