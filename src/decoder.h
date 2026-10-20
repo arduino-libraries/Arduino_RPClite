@@ -267,6 +267,15 @@ public:
 
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
+    // Drops all the buffered data and the parsing state. To be used when the
+    // transport has been reset (e.g. reconnected to a different peer) and any
+    // partially received message is no longer valid.
+    void reset() {
+        _bytes_stored = 0;
+        reset_packet();
+        reset_response();
+    }
+
     friend class RpcDecoderManager;
     friend class DecoderTester;
 
