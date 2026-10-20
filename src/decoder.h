@@ -14,8 +14,6 @@
 // MsgPack log level
 #define DEBUGLOG_DEFAULT_LOG_LEVEL_WARN
 
-#include <cstdint>
-
 #include "MsgPack.h"
 #include "transport.h"
 #include "rpclite_utils.h"
@@ -267,6 +265,8 @@ public:
     size_t get_packet_size() const { return _packet_size;}
 
     size_t size() const {return _bytes_stored;}
+
+    size_t buffer_size() const {return BufferSize;}
 
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
