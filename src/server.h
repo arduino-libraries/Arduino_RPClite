@@ -20,7 +20,9 @@
 #include "decoder.h"
 #include "decoder_manager.h"
 
-#define MAX_CALLBACKS   100
+#ifndef RPCLITE_SERVER_MAX_CALLBACKS
+#define RPCLITE_SERVER_MAX_CALLBACKS   100
+#endif
 
 class RPCServer {
 
@@ -50,7 +52,7 @@ public:
 
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool get_rpc(RPCRequest<RpcSize>& req, MsgPack::str_t tag="") {
         decoder->decode();
 
@@ -63,7 +65,7 @@ public:
         return req.size > 0;
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     void process_request(RPCRequest<RpcSize>& req) {
 
         if (!req.unpack_request_headers()) {
@@ -77,7 +79,7 @@ public:
 
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool send_response(const RPCRequest<RpcSize>& req) const {
 
         if (req.type == NO_MSG || req.packer.size() == 0) {
@@ -94,7 +96,7 @@ public:
 
 private:
     RpcDecoder<>* decoder = nullptr;
-    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher{};
+    RpcFunctionDispatcher<RPCLITE_SERVER_MAX_CALLBACKS> dispatcher{};
     
 };
 
