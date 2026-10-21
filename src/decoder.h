@@ -23,7 +23,7 @@ using namespace RpcUtils::detail;
 
 #define MIN_RPC_BYTES   4
 
-template<size_t BufferSize = DECODER_BUFFER_SIZE>
+template<size_t BufferSize = RPCLITE_DECODER_BUFFER_SIZE>
 class RpcDecoder {
 
     explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}

@@ -13,8 +13,13 @@
 
 #include "Arduino.h"
 
-#define DECODER_BUFFER_SIZE     1024
+#ifndef RPCLITE_DECODER_BUFFER_SIZE
+#define RPCLITE_DECODER_BUFFER_SIZE     1024
+#endif
+
+#ifndef RPCLITE_MAX_TRANSPORTS
 #define RPCLITE_MAX_TRANSPORTS  3
+#endif
 
 //#define HANDLE_RPC_ERRORS
 #include "transport.h"
