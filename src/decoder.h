@@ -18,6 +18,7 @@
 #include "transport.h"
 #include "rpclite_utils.h"
 #include "error.h"
+#include "request.h"
 
 using namespace RpcUtils::detail;
 
@@ -210,46 +211,26 @@ public:
             offset = _response_offset;      // looking for a RESP
         }
 
-        size_t bytes_checked = 0;
-        size_t container_size;
-        int type = NO_MSG;
-        MsgPack::Unpacker unpacker;
-
-        while (bytes_checked + offset < _bytes_stored){
-            bytes_checked++;
-            unpacker.clear();
-            if (!unpacker.feed(_raw_buffer + offset, bytes_checked)) continue;
-
-            if (unpacker.isUInt7()) {   // let the ascii pass
-                consume(1, offset);
-                bytes_checked--;
-                _dropped_bytes++;
-                continue;
+        while (offset < _bytes_stored) {
+            const uint8_t first = _raw_buffer[offset];
+            if (first != 0x93 && first != 0x94) {
+                resync(); continue;
             }
-
-            if (unpackTypedArray(unpacker, container_size, type)) {
-
-                if (!isValidRpc(type, container_size)) {
-                    consume(bytes_checked, offset);
-                    _discarded_packets++;
-                    break; // Not a valid rpclib format
+            const int length = frameLength(_raw_buffer+offset, _bytes_stored-offset, RPCLITE_REQUEST_BUFFER_SIZE);
+            if (length == 0) return;
+            if (length < 0) { resync(); continue; }
+            MsgPack::Unpacker unpacker;
+            size_t container_size = 0;
+            int type = NO_MSG;
+            if (!unpacker.feed(_raw_buffer+offset, length) ||
+                !unpackTypedArray(unpacker, container_size, type) ||
+                !isValidRpc(type, container_size)) {
+                consume(length, offset); ++_discarded_packets; continue;
                 }
-
-                if (offset == 0) {
-                    _packet_type = type;
-                    _packet_size = bytes_checked;
-                }
-
-                if (type == RESP_MSG) {
-                    _response_offset = offset;
-                    _response_size = bytes_checked; // response queued
-                } else {
-                    _response_offset = offset + bytes_checked;  // keep on looking for a RESP_MSG
-                }
-
-                break;
-            }
-
+            if (offset == 0) { _packet_type=type; _packet_size=length; }
+            if (type == RESP_MSG) { _response_offset=offset; _response_size=length; }
+            else _response_offset=offset+length;
+            return;
         }
 
     }
@@ -284,7 +265,10 @@ public:
         _transport->flush();
     }
 
+    void enableResync(bool value) {auto_resync = value;}
+
     void resync() {
+        if (!auto_resync) return;
         if (packet_incoming()) return;
 
         size_t bytes_to_consume = 1;    // 1st byte is always consumed
@@ -329,6 +313,58 @@ private:
     uint32_t _msg_id = 0;
     uint32_t _discarded_packets = 0;
     uint32_t _dropped_bytes = 0;
+    bool auto_resync = true;
+
+    int frameLength(const uint8_t* data, size_t size, size_t limit) {
+        size_t pos = 0;
+        uint64_t pending = 1;
+        while (pending) {
+            if (pos >= size) return 0;
+            const uint8_t c = data[pos++];
+            --pending;
+            uint64_t payload = 0, children = 0;
+            unsigned width = 0;
+            bool variable = false, map = false, container = false, extension = false;
+            if (c <= 0x7f || c >= 0xe0 || c == 0xc0 || c == 0xc2 || c == 0xc3) {}
+            else if ((c & 0xf0) == 0x80) children = 2*(c & 15);
+            else if ((c & 0xf0) == 0x90) children = c & 15;
+            else if ((c & 0xe0) == 0xa0) payload = c & 31;
+            else switch (c) {
+                case 0xc4: case 0xd9: width=1; variable=true; break;
+                case 0xc5: case 0xda: width=2; variable=true; break;
+                case 0xc6: case 0xdb: width=4; variable=true; break;
+                case 0xc7: width=1; variable=true; extension=true; break;
+                case 0xc8: width=2; variable=true; extension=true; break;
+                case 0xc9: width=4; variable=true; extension=true; break;
+                case 0xca: case 0xce: case 0xd2: payload=4; break;
+                case 0xcb: case 0xcf: case 0xd3: payload=8; break;
+                case 0xcc: case 0xd0: payload=1; break;
+                case 0xcd: case 0xd1: payload=2; break;
+                case 0xd4: payload=2; break;
+                case 0xd5: payload=3; break;
+                case 0xd6: payload=5; break;
+                case 0xd7: payload=9; break;
+                case 0xd8: payload=17; break;
+                case 0xdc: width=2; container=true; break;
+                case 0xdd: width=4; container=true; break;
+                case 0xde: width=2; container=true; map=true; break;
+                case 0xdf: width=4; container=true; map=true; break;
+                default: return -1; // reserved 0xc1
+            }
+            if (width) {
+                if (width > size-pos) return 0;
+                uint64_t length=0;
+                for (unsigned i=0; i<width; ++i) length=(length<<8)|data[pos++];
+                if (container) children=length*(map ? 2 : 1);
+                if (variable) payload=length+(extension ? 1 : 0);
+            }
+            pending += children;
+            if (pos > limit || payload > limit-pos || pending > limit-pos-payload) return -1;
+            if (payload > size-pos) return 0;
+            pos += (size_t)payload;
+        }
+        return (int)pos;
+    }
 
     bool buffer_full() const { return _bytes_stored == BufferSize; }
 
