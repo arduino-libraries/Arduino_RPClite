@@ -94,6 +94,8 @@ public:
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
+    RpcDecoder<>* get_decoder() {return decoder;}
+
 private:
     RpcDecoder<>* decoder = nullptr;
     RpcFunctionDispatcher<RPCLITE_SERVER_MAX_CALLBACKS> dispatcher{};

@@ -27,6 +27,10 @@ class SerialTransport final : public ITransport {
             return _stream->available();
         }
 
+        void flush() override {
+            _stream->flush();
+        }
+
         size_t write(const uint8_t* data, size_t size) override {
             _stream->write(data, size);
             return size;

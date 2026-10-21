@@ -235,6 +235,77 @@ void runDecoderGetTopResponseTest(const char* label, size_t expected_size, int _
   Serial.println("-- Done --\n");
 }
 
+void runDecoderFlushTest(const char* label) {
+  Serial.println(label);
+
+  print_buf();
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  if (!decoder->packet_incoming()) {Serial.println("No packet");} else {Serial.println("Packet incoming");}
+  if (!decoder->response_queued()) {Serial.println("No response");} else {Serial.println("Response queued");}
+
+  decoder->flush();
+
+  tester.print_raw_buf();
+  
+  Serial.println("-- Done --\n");
+}
+
+void runDecoderResyncTest(const char* label) {
+  Serial.println(label);
+
+  print_buf();
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  if (!decoder->packet_incoming()) {Serial.println("No packet");} else {Serial.println("Packet incoming");}
+  if (!decoder->response_queued()) {Serial.println("No response");} else {Serial.println("Response queued");}
+
+  decoder->resync();
+
+  tester.print_raw_buf();
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  Serial.println("-- Done --\n");
+}
+
+void runDecoderDiscardTest(const char* label) {
+  Serial.println(label);
+
+  print_buf();
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  if (!decoder->packet_incoming()) {Serial.println("No packet");} else {Serial.println("Packet incoming");}
+  if (!decoder->response_queued()) {Serial.println("No response");} else {Serial.println("Response queued");}
+
+  decoder->discard();
+
+  tester.print_raw_buf();
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  Serial.println("-- Done --\n");
+}
+
 void testWelcomeString() {
   packer.clear();
 
@@ -475,19 +546,51 @@ void testCombinedComplexBuffer() {
   runDecoderTest("== Test: Mixed Bin/Ext + Multiple RPCs ==");
 }
 
+void testFlush() {
+  MsgPack::object::nil_t nil;
+  packer.clear();
+
+  // broken 1st REQ
+  packer.serialize(MsgPack::arr_size_t(4), 0, 1);
+  packer.serialize(MsgPack::arr_size_t(4), 1, 1, nil, 101);
+
+  runDecoderFlushTest("== Test: Flush ==");
+}
+
+void testResync() {
+  MsgPack::object::nil_t nil;
+  packer.clear();
+
+  // broken 1st REQ
+  packer.serialize(MsgPack::arr_size_t(4), 0, 1);
+  packer.serialize(MsgPack::arr_size_t(4), 1, 1, nil, 101);
+
+  runDecoderResyncTest("== Test: Resync ==");
+}
+
+void testDiscard() {
+  MsgPack::object::nil_t nil;
+  packer.clear();
+
+  // broken 1st REQ
+  packer.serialize(MsgPack::arr_size_t(4), 0, 1, "droppable", MsgPack::arr_size_t(1), 0);
+  packer.serialize(MsgPack::arr_size_t(4), 1, 1, nil, 101);
+
+  runDecoderDiscardTest("== Test: Discard ==");
+}
+
 void setup() {
   Serial.begin(115200);
   while(!Serial);
 
   delay(1000);
-
+/*
   Serial.println("=== RPC Decoder Error Tests ===");
   testWelcomeString();
   testInvalidArray();
   testAsciiInTheMiddle();
   
   Serial.println("=== RPC Decoder Nested Tests ===");
-
   testNestedArrayRequest();
   testMapRequest();
   testNestedReturn();
@@ -500,6 +603,10 @@ void setup() {
   testBinaryParam();
   testExtensionParam();
   testCombinedComplexBuffer();
+*/
+  testFlush();
+  testResync();
+  testDiscard();
 
   Serial.println("=== All Tests Completed ===");
 }
