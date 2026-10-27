@@ -252,30 +252,30 @@ void runDecoderFlushTest(const char* label) {
   decoder->flush();
 
   tester.print_raw_buf();
-  
+
   Serial.println("-- Done --\n");
 }
 
 void runDecoderResyncTest(const char* label) {
   Serial.println(label);
 
-  print_buf();
-  dummy_transport.reset(packer.data(), packer.size());
-  tester.reset();
+  static const uint8_t raw[] = {
+    0x94, 0x00, 0x4F, 0xA3, 0x61,
+    0x94, 0x00, 0x50, 0xA3, 0x61, 0x64, 0x64, 0x92, 0x0A, 0x0B
+  };
 
-  decoder->decode();
-
+  decoder->enableResync(false);
+  dummy_transport.reset(raw, sizeof(raw));
   tester.print_raw_buf();
 
   if (!decoder->packet_incoming()) {Serial.println("No packet");} else {Serial.println("Packet incoming");}
   if (!decoder->response_queued()) {Serial.println("No response");} else {Serial.println("Response queued");}
 
-  decoder->resync();
-
+  decoder->decode();
   tester.print_raw_buf();
 
+  decoder->enableResync(true);
   decoder->decode();
-
   tester.print_raw_buf();
 
   Serial.println("-- Done --\n");
@@ -560,10 +560,6 @@ void testFlush() {
 void testResync() {
   MsgPack::object::nil_t nil;
   packer.clear();
-
-  // broken 1st REQ
-  packer.serialize(MsgPack::arr_size_t(4), 0, 1);
-  packer.serialize(MsgPack::arr_size_t(4), 1, 1, nil, 101);
 
   runDecoderResyncTest("== Test: Resync ==");
 }

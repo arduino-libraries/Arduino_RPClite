@@ -34,17 +34,39 @@ namespace detail {
 /// --- deserialization helpers --- ///
 ///////////////////////////////////////
 
-inline bool isValidRpc(int type, size_t size) {
-    switch (type) {
-        case CALL_MSG:
-            return size == REQUEST_SIZE;
-        case RESP_MSG:
-            return size == RESPONSE_SIZE;
-        case NOTIFY_MSG:
-            return size == NOTIFY_SIZE;
-        default:
-            return false;
+inline bool isValidRpc(MsgPack::Unpacker& unpacker, int& type, size_t& size) {
+    type = WRONG_MSG;
+    size = 0;
+
+    MsgPack::arr_size_t sz;
+    if (!unpacker.deserialize(sz)) return false;
+    size = sz.size();
+
+    int t;
+    if (!unpacker.deserialize(t)) return false;
+
+    switch (t) {
+    case CALL_MSG:   if (size != REQUEST_SIZE)  return false; break;
+    case RESP_MSG:   if (size != RESPONSE_SIZE) return false; break;
+    case NOTIFY_MSG: if (size != NOTIFY_SIZE)   return false; break;
+    default:         return false;
     }
+    type = t;
+
+    if (t == CALL_MSG || t == RESP_MSG) {
+        uint32_t req_id;
+        if (!unpacker.deserialize(req_id)) return false;
+    }
+
+    if (t == CALL_MSG || t == NOTIFY_MSG) {
+        MsgPack::str_t method;
+        if (!unpacker.deserialize(method)) return false;
+
+        MsgPack::arr_size_t param_size;
+        if (!unpacker.deserialize(param_size)) return false;
+    }
+
+    return true;
 }
 
 inline bool unpackObject(MsgPack::Unpacker& unpacker);

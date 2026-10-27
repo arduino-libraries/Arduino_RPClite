@@ -211,26 +211,24 @@ public:
             offset = _response_offset;      // looking for a RESP
         }
 
-        while (offset < _bytes_stored) {
+        if (offset < _bytes_stored) {
             const uint8_t first = _raw_buffer[offset];
             if (first != 0x93 && first != 0x94) {
-                resync(); continue;
+                resync(); return;
             }
             const int length = frameLength(_raw_buffer+offset, _bytes_stored-offset, RPCLITE_REQUEST_BUFFER_SIZE);
             if (length == 0) return;
-            if (length < 0) { resync(); continue; }
+            if (length < 0) { resync(); return; }
             MsgPack::Unpacker unpacker;
             size_t container_size = 0;
             int type = NO_MSG;
             if (!unpacker.feed(_raw_buffer+offset, length) ||
-                !unpackTypedArray(unpacker, container_size, type) ||
-                !isValidRpc(type, container_size)) {
-                consume(length, offset); ++_discarded_packets; continue;
+                !isValidRpc(unpacker, type, container_size)) {
+                consume(length, offset); ++_discarded_packets; return;
                 }
             if (offset == 0) { _packet_type=type; _packet_size=length; }
             if (type == RESP_MSG) { _response_offset=offset; _response_size=length; }
             else _response_offset=offset+length;
-            return;
         }
 
     }
