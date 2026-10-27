@@ -34,6 +34,10 @@ public:
         return dispatcher.bind(name, func, tag);
     }
 
+    bool unbind(const MsgPack::str_t& name){
+        return dispatcher.unbind(name);
+    }
+
     bool hasTag(const MsgPack::str_t& name, MsgPack::str_t tag) const {
         return dispatcher.hasTag(name, tag);
     }
