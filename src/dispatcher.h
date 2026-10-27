@@ -37,6 +37,21 @@ public:
         return true;
     }
 
+    bool unbind(const MsgPack::str_t& name) {
+        for (size_t i = 0; i < _count; ++i) {
+            if (_entries[i].name == name) {
+                delete _entries[i].fn;
+                // Move the last entry into the freed slot (order is not relevant)
+                if (i != --_count) {
+                    _entries[i] = _entries[_count];
+                }
+                _entries[_count] = {};
+                return true;
+            }
+        }
+        return false;
+    }
+
     bool isBound(const MsgPack::str_t& name) const {
         for (size_t i = 0; i < _count; ++i) {
             if (_entries[i].name == name) {
