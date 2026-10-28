@@ -214,11 +214,11 @@ public:
         if (offset < _bytes_stored) {
             const uint8_t first = _raw_buffer[offset];
             if (first != 0x93 && first != 0x94) {
-                resync(); return;
+                resync(offset); return;
             }
             const int length = frameLength(_raw_buffer+offset, _bytes_stored-offset, RPCLITE_REQUEST_BUFFER_SIZE);
             if (length == 0) return;
-            if (length < 0) { resync(); return; }
+            if (length < 0) { resync(offset); return; }
             MsgPack::Unpacker unpacker;
             size_t container_size = 0;
             int type = NO_MSG;
@@ -265,14 +265,18 @@ public:
 
     void enableResync(bool value) {auto_resync = value;}
 
-    void resync() {
+    void resync(size_t offset = 0) {
         if (!auto_resync) return;
-        if (packet_incoming()) return;
+        if (response_queued() || (offset== 0 && packet_incoming())) return;
 
         size_t bytes_to_consume = 1;    // 1st byte is always consumed
-        for (size_t i = 1; i < _bytes_stored; i++)
+        for (size_t i = offset + 1; i < _bytes_stored; i++)
         {
-            // stop conditions
+            if (i + 1 >= _bytes_stored) {
+                if (_raw_buffer[i] == 0x94 || _raw_buffer[i] == 0x93) break;
+                bytes_to_consume++;
+                continue;
+            }
             if ((_raw_buffer[i] == 0x94 && _raw_buffer[i+1] == RESP_MSG) ||
                 (_raw_buffer[i] == 0x94 && _raw_buffer[i+1] == CALL_MSG) ||
                 (_raw_buffer[i] == 0x93 && _raw_buffer[i+1] == NOTIFY_MSG)) {
@@ -280,7 +284,7 @@ public:
             }
             bytes_to_consume++;
         }
-        consume(bytes_to_consume);
+        consume(bytes_to_consume, offset);
         _dropped_bytes += bytes_to_consume;
     }
 
