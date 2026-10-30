@@ -1,23 +1,32 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
-    
 */
 
 #ifndef RPCLITE_REQUEST_H
 #define RPCLITE_REQUEST_H
 
-#define DEFAULT_RPC_BUFFER_SIZE  (DECODER_BUFFER_SIZE / 4)
+#ifndef RPCLITE_REQUEST_BUFFER_SIZE
+  #ifdef DEFAULT_RPC_BUFFER_SIZE
+    #define RPCLITE_REQUEST_BUFFER_SIZE DEFAULT_RPC_BUFFER_SIZE
+  #else
+    #define RPCLITE_REQUEST_BUFFER_SIZE (RPCLITE_DECODER_BUFFER_SIZE / 4)
+  #endif
+#endif
+
+#ifndef DEFAULT_RPC_BUFFER_SIZE
+#define DEFAULT_RPC_BUFFER_SIZE RPCLITE_REQUEST_BUFFER_SIZE
+#endif
 
 
 #include "rpclite_utils.h"
 
-template<size_t BufferSize = DEFAULT_RPC_BUFFER_SIZE>
+template<size_t BufferSize = RPCLITE_REQUEST_BUFFER_SIZE>
 class RPCRequest {
 
 public:

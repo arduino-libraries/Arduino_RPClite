@@ -1,12 +1,12 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
-    
+
 */
 
 #ifndef SERIALTRANSPORT_H
@@ -25,6 +25,10 @@ class SerialTransport final : public ITransport {
 
         bool available() override {
             return _stream->available();
+        }
+
+        void flush() override {
+            _stream->flush();
         }
 
         size_t write(const uint8_t* data, size_t size) override {

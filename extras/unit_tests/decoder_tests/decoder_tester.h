@@ -64,6 +64,10 @@ public:
         Serial.print(decoder._raw_buffer[i], HEX);
         Serial.print(" ");
     }
+    Serial.print("stored: "); Serial.print(decoder._bytes_stored); Serial.print(" | packet_type: "); Serial.print(decoder._packet_type);
+    Serial.print(" | packet_size: "); Serial.print(decoder._packet_size); Serial.print(" | response_offset: "); Serial.print(decoder._response_offset);
+    Serial.print(" | response_size: "); Serial.print(decoder._response_size); Serial.print(" | msg_id: "); Serial.print(decoder._msg_id);
+    Serial.print(" | discarded_packets: "); Serial.print(decoder._discarded_packets); Serial.print(" | dropped_bytes: "); Serial.print(decoder._dropped_bytes);
     Serial.println("");
   }
 
@@ -75,6 +79,7 @@ public:
     decoder._response_size = 0;
     decoder._msg_id = 0;
     decoder._discarded_packets = 0;
+    decoder._dropped_bytes = 0;
   }
 
 };
