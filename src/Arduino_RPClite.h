@@ -1,12 +1,11 @@
 /*
     This file is part of the Arduino_RPClite library.
 
-    Copyright (c) 2025 Arduino SA
+    Copyright (C) Arduino s.r.l. and/or its affiliated companies
 
     This Source Code Form is subject to the terms of the Mozilla Public
     License, v. 2.0. If a copy of the MPL was not distributed with this
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
-    
 */
 
 #ifndef ARDUINO_RPCLITE_H
@@ -14,8 +13,13 @@
 
 #include "Arduino.h"
 
-#define DECODER_BUFFER_SIZE     1024
+#ifndef RPCLITE_DECODER_BUFFER_SIZE
+#define RPCLITE_DECODER_BUFFER_SIZE     1024
+#endif
+
+#ifndef RPCLITE_MAX_TRANSPORTS
 #define RPCLITE_MAX_TRANSPORTS  3
+#endif
 
 //#define HANDLE_RPC_ERRORS
 #include "transport.h"
