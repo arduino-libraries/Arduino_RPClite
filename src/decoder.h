@@ -85,9 +85,7 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected response type";
-            consume(_response_size, _response_offset);
-            if (_response_offset == 0) reset_packet();
-            _discarded_packets++;
+            drop_response();
             return true;
         }
 
@@ -95,9 +93,7 @@ public:
             // This should never happen
             error.code = PARSING_ERR;
             error.traceback = "Unexpected RPC response size";
-            consume(_response_size, _response_offset);
-            if (_response_offset == 0) reset_packet();
-            _discarded_packets++;
+            drop_response();
             return true;
         }
 
@@ -106,26 +102,32 @@ public:
             if (!unpacker.deserialize(nil, result)) {
                 error.code = PARSING_ERR;
                 error.traceback = "Result not parsable (check type)";
-                consume(_response_size, _response_offset);
-                if (_response_offset == 0) reset_packet();
-                _discarded_packets++;
+                drop_response();
                 return true;
             }
         } else {                        // RPC returned an error
             if (!unpacker.deserialize(error, nil)) {
                 error.code = PARSING_ERR;
                 error.traceback = "RPC Error not parsable (check type)";
-                consume(_response_size, _response_offset);
-                if (_response_offset == 0) reset_packet();
-                _discarded_packets++;
+                drop_response();
                 return true;
             }
         }
 
         if (_response_offset == 0) reset_packet();
         consume(_response_size, _response_offset);
+        reset_response();
 
         return true;
+    }
+
+    void drop_response() {
+        if (!response_queued()) return;
+        const bool at_head = (_response_offset == 0);
+        consume(_response_size, _response_offset);
+        reset_response();
+        if (at_head) reset_packet();
+        _discarded_packets++;
     }
 
     bool send_response(const MsgPack::Packer& packer) const {
@@ -209,6 +211,10 @@ public:
         if (packet_incoming()) {
             if (response_queued()) return;  // parsing complete
             offset = _response_offset;      // looking for a RESP
+        } else if (response_queued() && _response_offset == 0) {
+            _packet_size = _response_size;
+            _packet_type = RESP_MSG;
+            return;;
         }
 
         if (offset < _bytes_stored) {
@@ -386,15 +392,12 @@ private:
     }
 
     size_t pop_packet(uint8_t* buffer, size_t buffer_size) {
-
         if (!packet_incoming()) return 0;
 
         size_t packet_size = get_packet_size();
         if (packet_size > buffer_size) return 0;
 
-        for (size_t i = 0; i < packet_size; i++) {
-            buffer[i] = _raw_buffer[i];
-        }
+        memcpy(buffer, _raw_buffer, packet_size);
 
         reset_packet();
         return consume(packet_size);
@@ -412,20 +415,18 @@ private:
 
     size_t consume(size_t size, size_t offset = 0) {
         // Boundary checks
-        if (offset + size > _bytes_stored || size == 0) return 0;
+        if (size == 0 || size > _bytes_stored || offset > _bytes_stored - size) return 0;
 
-        size_t remaining_bytes = _bytes_stored - size;
-        for (size_t i=offset; i<remaining_bytes; i++){
-            _raw_buffer[i] = _raw_buffer[i+size];
+        const size_t tail = _bytes_stored - offset - size;   // bytes after the removed region
+        if (tail > 0) {
+            memmove(_raw_buffer + offset, _raw_buffer + offset + size, tail);
         }
 
         if (_response_offset >= offset + size) {
             _response_offset -= size;
-        } else {
-            reset_response();
         }
 
-        _bytes_stored = remaining_bytes;
+        _bytes_stored -= size;
         return size;
     }
 

@@ -41,6 +41,7 @@ void runDecoderTest(const char* label) {
   while (!decoder->packet_incoming()) {
     Serial.println("Packet not ready");
     decoder->decode();
+    tester.print_raw_buf();
     delay(50);
   }
 
@@ -118,6 +119,7 @@ void runDecoderPopFirstTest(const char* label, size_t expected_2nd_pack_size) {
   Serial.print("Consuming 1st Packet of size: ");
   Serial.println(pack_size);
   tester.pop_first();
+  decoder->decode();
   tester.print_raw_buf();
 
   tester.first_response_info();
@@ -366,12 +368,13 @@ void testNestedArrayRequest() {
 
 void testMapRequest() {
   packer.clear();
+  MsgPack::arr_size_t params(1);
   MsgPack::map_size_t main_map(3);
   MsgPack::arr_size_t arr_b(2);
   MsgPack::map_size_t inner_map(1);
   MsgPack::arr_size_t req_sz(4);
 
-  packer.serialize(req_sz, 0, 1, "map_param", main_map,
+  packer.serialize(req_sz, 0, 1, "map_param", params, main_map,
                    "a", 1,
                    "b", arr_b, 10, 20,
                    "c", inner_map, "d", 4);
@@ -503,10 +506,11 @@ void testGetTopResponsePacket() {
 // Binary parameter (e.g., binary blob)
 void testBinaryParam() {
   packer.clear();
+  MsgPack::arr_size_t params(1);
   MsgPack::arr_size_t req_sz(4);
 
   MsgPack::bin_t<uint8_t> bin_data {0x01, 0x23, 0x45, 0x67, 0x89};
-  packer.serialize(req_sz, 0, 3, "binary", bin_data);
+  packer.serialize(req_sz, 0, 3, "binary", params, bin_data);
 
   runDecoderTest("== Test: Binary Parameter ==");
 }
@@ -514,11 +518,12 @@ void testBinaryParam() {
 // Extension type param (e.g., tagged binary format)
 void testExtensionParam() {
   packer.clear();
+  MsgPack::arr_size_t params(1);
   MsgPack::arr_size_t req_sz(4);
 
   int8_t ext_type = 42;
   uint8_t ext_payload[] = {0xDE, 0xAD, 0xBE, 0xEF};
-  packer.serialize(req_sz, 0, 4, "extension", MsgPack::object::ext(ext_type, ext_payload, sizeof(ext_payload)));
+  packer.serialize(req_sz, 0, 4, "extension", params, MsgPack::object::ext(ext_type, ext_payload, sizeof(ext_payload)));
 
   runDecoderTest("== Test: Extension Parameter ==");
 }
@@ -580,7 +585,7 @@ void setup() {
   while(!Serial);
 
   delay(1000);
-/*
+
   Serial.println("=== RPC Decoder Error Tests ===");
   testWelcomeString();
   testInvalidArray();
@@ -599,7 +604,7 @@ void setup() {
   testBinaryParam();
   testExtensionParam();
   testCombinedComplexBuffer();
-*/
+
   testFlush();
   testResync();
   testDiscard();
