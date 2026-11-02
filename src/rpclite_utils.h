@@ -13,8 +13,21 @@
 #ifndef RPCLITE_UTILS_H
 #define RPCLITE_UTILS_H
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
+
+#ifndef RPCLITE_DECODER_BUFFER_SIZE
+#define RPCLITE_DECODER_BUFFER_SIZE     1024
+#endif
+
+#ifndef RPCLITE_MAX_TRANSPORTS
+#define RPCLITE_MAX_TRANSPORTS  3
+#endif
+
+#ifndef RPCLITE_MAX_PENDING_CALLS
+#define RPCLITE_MAX_PENDING_CALLS  10
+#endif
 
 namespace RpcUtils {
 namespace detail {
@@ -34,7 +47,7 @@ namespace detail {
 /// --- deserialization helpers --- ///
 ///////////////////////////////////////
 
-inline bool isValidRpc(MsgPack::Unpacker& unpacker, int& type, size_t& size) {
+inline bool isValidRpc(MsgPack::Unpacker& unpacker, int& type, size_t& size, uint32_t& msg_id) {
     type = WRONG_MSG;
     size = 0;
 
@@ -56,6 +69,7 @@ inline bool isValidRpc(MsgPack::Unpacker& unpacker, int& type, size_t& size) {
     if (t == CALL_MSG || t == RESP_MSG) {
         uint32_t req_id;
         if (!unpacker.deserialize(req_id)) return false;
+        msg_id = req_id;
     }
 
     if (t == CALL_MSG || t == NOTIFY_MSG) {

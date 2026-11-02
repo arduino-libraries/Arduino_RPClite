@@ -46,6 +46,18 @@ public:
     return decoder.get_response(msg_id, result, error);
   }
 
+  void set_pending_id(uint32_t msg_id) {
+    decoder.set_pending_id(msg_id);
+  }
+
+  bool remove_pending_id(uint32_t msg_id) {
+    return decoder.remove_pending_id(msg_id);
+  }
+
+  size_t get_pending_id_list_size() {
+    return decoder.pending_id_list_size;
+  }
+
   void crop_bytes(size_t size, size_t offset){
     decoder.consume(size, offset);
   }
@@ -80,6 +92,7 @@ public:
     decoder._msg_id = 0;
     decoder._discarded_packets = 0;
     decoder._dropped_bytes = 0;
+    decoder.pending_id_list_size = 0;
   }
 
 };

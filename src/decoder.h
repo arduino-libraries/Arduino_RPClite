@@ -28,6 +28,8 @@ template<size_t BufferSize = RPCLITE_DECODER_BUFFER_SIZE>
 class RpcDecoder {
 
     explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}
+    uint32_t pending_id_list[RPCLITE_MAX_PENDING_CALLS];
+    size_t pending_id_list_size = 0;
 
 public:
 
@@ -227,13 +229,19 @@ public:
             if (length < 0) { resync(offset); return; }
             MsgPack::Unpacker unpacker;
             size_t container_size = 0;
+            uint32_t msg_id = 0;
             int type = NO_MSG;
             if (!unpacker.feed(_raw_buffer+offset, length) ||
-                !isValidRpc(unpacker, type, container_size)) {
+                !isValidRpc(unpacker, type, container_size, msg_id)) {
                 consume(length, offset); ++_discarded_packets; return;
                 }
             if (offset == 0) { _packet_type=type; _packet_size=length; }
-            if (type == RESP_MSG) { _response_offset=offset; _response_size=length; }
+            if (type == RESP_MSG) {
+                _response_offset=offset; _response_size=length;
+                if (!is_pending_id(msg_id)) {
+                    drop_response();
+                }
+            }
             else _response_offset=offset+length;
         }
 
@@ -305,6 +313,17 @@ public:
         _discarded_packets = 0;
         _dropped_bytes = 0;
         _msg_id = 0;
+        pending_id_list_size = 0;
+    }
+
+    bool remove_pending_id(uint32_t msg_id) {
+        for (size_t i = 0; i < pending_id_list_size; i++) {
+            if (pending_id_list[i] == msg_id) {
+                pending_id_list[i] = pending_id_list[--pending_id_list_size];
+                return true;
+            }
+        }
+        return false;
     }
 
     friend class RpcDecoderManager;
@@ -428,6 +447,19 @@ private:
 
         _bytes_stored -= size;
         return size;
+    }
+
+    void set_pending_id(uint32_t msg_id) {
+        if (pending_id_list_size < RPCLITE_MAX_PENDING_CALLS) {
+            pending_id_list[pending_id_list_size++] = msg_id;
+        }
+    }
+
+    bool is_pending_id(uint32_t msg_id) const {
+        for (size_t i = 0; i < pending_id_list_size; i++) {
+            if (pending_id_list[i] == msg_id) return true;
+        }
+        return false;
     }
 
 };

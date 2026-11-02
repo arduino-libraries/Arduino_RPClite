@@ -11,6 +11,8 @@
 #ifndef RPCLITE_REQUEST_H
 #define RPCLITE_REQUEST_H
 
+#include "rpclite_utils.h"
+
 #ifndef RPCLITE_REQUEST_BUFFER_SIZE
   #ifdef DEFAULT_RPC_BUFFER_SIZE
     #define RPCLITE_REQUEST_BUFFER_SIZE DEFAULT_RPC_BUFFER_SIZE
@@ -23,8 +25,6 @@
 #define DEFAULT_RPC_BUFFER_SIZE RPCLITE_REQUEST_BUFFER_SIZE
 #endif
 
-
-#include "rpclite_utils.h"
 
 template<size_t BufferSize = RPCLITE_REQUEST_BUFFER_SIZE>
 class RPCRequest {

@@ -308,6 +308,50 @@ void runDecoderDiscardTest(const char* label) {
   Serial.println("-- Done --\n");
 }
 
+void runDecoderTimeoutPendingRemovalTest(const char* label) {
+  Serial.println(label);
+
+  const uint32_t timed_out_msg_id = 7;
+
+  MsgPack::object::nil_t nil;
+  packer.clear();
+  packer.serialize(MsgPack::arr_size_t(4), 1, timed_out_msg_id, nil, 123);
+
+  print_buf();
+  dummy_transport.reset(packer.data(), packer.size());
+  tester.reset();
+
+  tester.set_pending_id(timed_out_msg_id);
+
+  Serial.print("Pending IDs before timeout removal: ");
+  Serial.println(tester.get_pending_id_list_size());
+
+  if (!tester.remove_pending_id(timed_out_msg_id)) {
+    Serial.println("ERROR removing timed out msg_id from pending list");
+    return;
+  }
+
+  Serial.print("Pending IDs after timeout removal: ");
+  Serial.println(tester.get_pending_id_list_size());
+
+  decoder->decode();
+
+  tester.print_raw_buf();
+
+  if (decoder->response_queued()) {
+    Serial.println("ERROR late timed-out response was still queued");
+    return;
+  }
+
+  if (decoder->get_discarded_packets() == 0) {
+    Serial.println("ERROR late timed-out response was not discarded");
+    return;
+  }
+
+  Serial.println("Late timed-out response discarded correctly");
+  Serial.println("-- Done --\n");
+}
+
 void testWelcomeString() {
   packer.clear();
 
@@ -608,6 +652,7 @@ void setup() {
   testFlush();
   testResync();
   testDiscard();
+  runDecoderTimeoutPendingRemovalTest("== Test: Timeout removes pending msg_id and drops late response ==");
 
   Serial.println("=== All Tests Completed ===");
 }
