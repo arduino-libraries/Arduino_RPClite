@@ -42,9 +42,10 @@ public:
         return dispatcher.hasTag(name, tag);
     }
 
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool run() {
 
-        RPCRequest<> req;
+        RPCRequest<RpcSize> req;
 
         if (!get_rpc(req)) return false; // Populate local request
 
@@ -56,7 +57,7 @@ public:
 
     template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool get_rpc(RPCRequest<RpcSize>& req, MsgPack::str_t tag="") {
-        decoder->decode();
+        decoder->decode(RpcSize);
 
         const MsgPack::str_t method = decoder->fetch_rpc_method();
 

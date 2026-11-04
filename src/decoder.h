@@ -187,9 +187,9 @@ public:
         return pop_packet(buffer, buffer_size);
     }
 
-    void decode(){
+    void decode(size_t max_rpc_size = RPCLITE_REQUEST_BUFFER_SIZE){
         advance();
-        parse_packet();
+        parse_packet(max_rpc_size);
     }
 
     void advance() {
@@ -201,7 +201,7 @@ public:
 
     }
 
-    void parse_packet(){
+    void parse_packet(size_t max_rpc_size = RPCLITE_REQUEST_BUFFER_SIZE){
 
         size_t offset = 0;
 
@@ -219,7 +219,7 @@ public:
             if (first != 0x93 && first != 0x94) {
                 resync(offset); return;
             }
-            const int length = frameLength(_raw_buffer+offset, _bytes_stored-offset, RPCLITE_REQUEST_BUFFER_SIZE);
+            const int length = frameLength(_raw_buffer+offset, _bytes_stored-offset, max_rpc_size);
             if (length == 0) return;
             if (length < 0) { resync(offset); return; }
             MsgPack::Unpacker unpacker;
