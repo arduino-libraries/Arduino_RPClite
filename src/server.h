@@ -29,6 +29,8 @@ class RPCServer {
 public:
     explicit RPCServer(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
 
+    explicit RPCServer(IRpcDecoder* dec) : decoder(dec) {}
+
     operator bool() const {return decoder != nullptr;}
 
     template<typename F>

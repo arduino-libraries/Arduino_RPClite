@@ -25,6 +25,8 @@ public:
 
     explicit RPCClient(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
 
+    explicit RPCClient(IRpcDecoder* dec) : decoder(dec) {}
+
     operator bool() const {return decoder != nullptr;}
 
     RPCClient& setTimeout(uint32_t value) {
