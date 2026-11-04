@@ -24,17 +24,12 @@ using namespace RpcUtils::detail;
 
 #define MIN_RPC_BYTES   4
 
-template<size_t BufferSize = RPCLITE_DECODER_BUFFER_SIZE>
-class RpcDecoder {
-
-    explicit RpcDecoder(ITransport& transport) : _transport(&transport) {}
-    uint32_t pending_id_list[RPCLITE_MAX_PENDING_CALLS];
-    size_t pending_id_list_size = 0;
-
+class IRpcDecoder {
 public:
+    virtual ~IRpcDecoder() = default;
 
-    RpcDecoder(const RpcDecoder&) = delete;
-    RpcDecoder& operator=(const RpcDecoder&) = delete;
+    IRpcDecoder(const IRpcDecoder&) = delete;
+    IRpcDecoder& operator=(const IRpcDecoder&) = delete;
 
     template<typename... Args>
     bool send_call(const int call_type, const MsgPack::str_t& method, uint32_t& msg_id, Args&&... args) {
@@ -62,6 +57,7 @@ public:
         }
         return false;
     }
+
 
     template<typename RType>
     bool get_response(const uint32_t msg_id, RType& result, RpcError& error) {
@@ -196,11 +192,10 @@ public:
         parse_packet();
     }
 
-    // Fill the raw buffer to its capacity
     void advance() {
 
         if (_transport->available() && !buffer_full()) {
-            size_t bytes_read = _transport->read(_raw_buffer + _bytes_stored, BufferSize - _bytes_stored);
+            size_t bytes_read = _transport->read(_raw_buffer + _bytes_stored, _capacity - _bytes_stored);
             _bytes_stored += bytes_read;
         }
 
@@ -248,19 +243,11 @@ public:
     }
 
     bool packet_incoming() const { return _packet_size >= MIN_RPC_BYTES; }
-
-    bool response_queued() const {
-        return _response_size > 0;
-    }
-
+    bool response_queued() const { return _response_size > 0; }
     int packet_type() const { return _packet_type; }
-
     size_t get_packet_size() const { return _packet_size;}
-
     size_t size() const {return _bytes_stored;}
-
-    size_t buffer_size() const {return BufferSize;}
-
+    size_t buffer_size() const {return _capacity;}
     uint32_t get_discarded_packets() const {return _discarded_packets;}
 
     void flush()
@@ -329,9 +316,14 @@ public:
     friend class RpcDecoderManager;
     friend class DecoderTester;
 
+protected:
+    IRpcDecoder(ITransport& transport, uint8_t* buffer, size_t capacity)
+        : _transport(&transport), _raw_buffer(buffer), _capacity(capacity) {}
+
 private:
     ITransport* _transport;
-    uint8_t _raw_buffer[BufferSize]{};
+    uint8_t* _raw_buffer;
+    size_t _capacity;
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
@@ -341,6 +333,8 @@ private:
     uint32_t _discarded_packets = 0;
     uint32_t _dropped_bytes = 0;
     bool auto_resync = true;
+    uint32_t pending_id_list[RPCLITE_MAX_PENDING_CALLS]{};
+    size_t pending_id_list_size = 0;
 
     int frameLength(const uint8_t* data, size_t size, size_t limit) {
         size_t pos = 0;
@@ -393,7 +387,7 @@ private:
         return (int)pos;
     }
 
-    bool buffer_full() const { return _bytes_stored == BufferSize; }
+    bool buffer_full() const { return _bytes_stored == _capacity; }
 
     bool buffer_empty() const { return _bytes_stored == 0;}
 
@@ -461,7 +455,21 @@ private:
         }
         return false;
     }
+};
 
+template<size_t BufferSize = RPCLITE_DECODER_BUFFER_SIZE>
+class RpcDecoder final : public IRpcDecoder {
+public:
+    static constexpr size_t buffer_size = BufferSize;
+
+private:
+    explicit RpcDecoder(ITransport& transport)
+        : IRpcDecoder(transport, _storage, BufferSize) {}
+
+    uint8_t _storage[BufferSize]{};
+
+    friend class RpcDecoderManager;
+    friend class DecoderTester;
 };
 
 #endif

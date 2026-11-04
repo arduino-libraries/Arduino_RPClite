@@ -12,11 +12,12 @@
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
 #include "error.h"
+#include "decoder.h"
 #include "decoder_manager.h"
 
 
 class RPCClient {
-    RpcDecoder<>* decoder=nullptr;
+    IRpcDecoder* decoder=nullptr;
     uint32_t timeout_ms = 0;
 
 public:
@@ -88,7 +89,7 @@ public:
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
-    RpcDecoder<>* get_decoder() {return decoder;}
+    IRpcDecoder* get_decoder() {return decoder;}
 
 };
 
