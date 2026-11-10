@@ -38,6 +38,10 @@ public:
         return dispatcher.unbind(name);
     }
 
+    bool isBound(const MsgPack::str_t& name) const {
+        return dispatcher.isBound(name);
+    }
+
     bool hasTag(const MsgPack::str_t& name, MsgPack::str_t tag) const {
         return dispatcher.hasTag(name, tag);
     }
