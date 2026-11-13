@@ -52,7 +52,11 @@ public:
         packer.serialize(arg_size, std::forward<Args>(args)...);
 
         if (send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size()){
-            _msg_id++;
+            if (call_type == CALL_MSG)
+            {
+                pending_id_list[pending_id_list_size++] = msg_id;
+                _msg_id++;
+            }
             return true;
         }
         return false;
