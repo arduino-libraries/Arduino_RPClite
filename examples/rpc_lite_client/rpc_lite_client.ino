@@ -16,7 +16,7 @@ RPCClient client(transport);
 
 void setup() {
     Serial1.begin(115200);      // eg Nano ESP32 use Serial1.begin(115200, SERIAL_8N1, D4, D5);
-    Serial1.println("Hello from NANO ESP32");   // this welcome message should be skipped by the server
+    Serial1.println("Hello from Arduino");   // this welcome message should be skipped by the server
 
     pinMode(LED_BUILTIN, OUTPUT);
     delay(10);

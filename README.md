@@ -87,6 +87,45 @@ void loop() {
 
 ```
 
+## RPC Buffer size
+The decoder buffer size can be set at compile time:
+```cpp
+#include <Arduino_RPClite.h>
+
+#define MY_DECODER_BUFFER_SIZE 4092
+
+SerialTransport transport(Serial1);
+RPCClient client(RpcDecoderManager::getInstance().getDecoder<MY_DECODER_BUFFER_SIZE>(transport));
+
+void setup() {
+    ...
+}
+
+void loop() {
+    ...
+}
+
+```
+
+The max bytesize allocated for each incoming RPC can be fine-tuned by the server.run templated method:
+
+```cpp
+#include <Arduino_RPClite.h>
+#define MY_DECODER_BUFFER_SIZE 2048
+#define MY_RPC_BUFFER_SIZE 256
+
+SerialTransport transport(Serial1);
+RPCServer server(RpcDecoderManager::getInstance().getDecoder<MY_DECODER_BUFFER_SIZE>(transport));
+
+void setup() {
+    ...
+}
+
+void loop(){
+    server.run<MY_RPC_BUFFER_SIZE>();
+}
+```
+
 ### Credits
 
 This library is based on the MsgPack library by @hideakitai.
