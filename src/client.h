@@ -34,6 +34,8 @@ public:
         return *this;
     }
 
+    uint32_t getTimeout() const {return timeout_ms;}
+
     template<typename... Args>
     void notify(const MsgPack::str_t& method, Args&&... args)  {
         uint32_t _id;
