@@ -58,13 +58,17 @@ public:
             if (timeout_ms > 0 && millis() - start > timeout_ms) {
                 lastError.code = TIMEOUT_ERR;
                 lastError.traceback = "RPC call timed out";
-                decoder->remove_pending_id(msg_id_wait);
+                cancel(msg_id_wait);
                 return false;
             }
         }
 
         return (lastError.code == NO_ERR);
 
+    }
+
+    void cancel(uint32_t wait_id) {
+        decoder->remove_pending_id(wait_id);
     }
 
     template<typename... Args>
