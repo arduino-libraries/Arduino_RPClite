@@ -12,18 +12,29 @@
 #ifndef RPCLITE_CLIENT_H
 #define RPCLITE_CLIENT_H
 #include "error.h"
+#include "decoder.h"
 #include "decoder_manager.h"
 
 
 class RPCClient {
-    RpcDecoder<>* decoder=nullptr;
+    IRpcDecoder* decoder=nullptr;
+    uint32_t timeout_ms = 0;
 
 public:
     RpcError lastError;
 
     explicit RPCClient(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
 
+    explicit RPCClient(IRpcDecoder* dec) : decoder(dec) {}
+
     operator bool() const {return decoder != nullptr;}
+
+    RPCClient& setTimeout(uint32_t value) {
+        timeout_ms = value;
+        return *this;
+    }
+
+    uint32_t getTimeout() const {return timeout_ms;}
 
     template<typename... Args>
     void notify(const MsgPack::str_t& method, Args&&... args)  {
@@ -44,12 +55,22 @@ public:
 
         // blocking call
         RpcError tmp_error;
+        unsigned long start = millis();
         while (!get_response(msg_id_wait, result, tmp_error)) {
-            //delay(1);
+            if (timeout_ms > 0 && millis() - start > timeout_ms) {
+                lastError.code = TIMEOUT_ERR;
+                lastError.traceback = "RPC call timed out";
+                cancel(msg_id_wait);
+                return false;
+            }
         }
 
         return (lastError.code == NO_ERR);
 
+    }
+
+    void cancel(uint32_t wait_id) {
+        decoder->remove_pending_id(wait_id);
     }
 
     template<typename... Args>
@@ -68,12 +89,15 @@ public:
 
         if (decoder->get_response(wait_id, result, error)) {
             lastError.copy(error);
+            decoder->remove_pending_id(wait_id);
             return true;
         }
         return false;
     }
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
+
+    IRpcDecoder* get_decoder() {return decoder;}
 
 };
 

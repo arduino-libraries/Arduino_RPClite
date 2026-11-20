@@ -31,6 +31,10 @@ class DummyTransport: public ITransport {
           r_size = 0;
         }
 
+        void flush() override {
+            // Mock flush
+        }
+
         bool available() override {
             return _dummy_buf_size > 0;
         }

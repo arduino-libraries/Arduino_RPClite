@@ -20,12 +20,16 @@
 #include "decoder.h"
 #include "decoder_manager.h"
 
-#define MAX_CALLBACKS   100
+#ifndef RPCLITE_SERVER_MAX_CALLBACKS
+#define RPCLITE_SERVER_MAX_CALLBACKS   100
+#endif
 
 class RPCServer {
 
 public:
     explicit RPCServer(ITransport& t) : decoder(RpcDecoderManager::getInstance().getDecoder(t)) {}
+
+    explicit RPCServer(IRpcDecoder* dec) : decoder(dec) {}
 
     operator bool() const {return decoder != nullptr;}
 
@@ -38,9 +42,10 @@ public:
         return dispatcher.hasTag(name, tag);
     }
 
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool run() {
 
-        RPCRequest<> req;
+        RPCRequest<RpcSize> req;
 
         if (!get_rpc(req)) return false; // Populate local request
 
@@ -50,9 +55,9 @@ public:
 
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool get_rpc(RPCRequest<RpcSize>& req, MsgPack::str_t tag="") {
-        decoder->decode();
+        decoder->decode(RpcSize);
 
         const MsgPack::str_t method = decoder->fetch_rpc_method();
 
@@ -63,7 +68,7 @@ public:
         return req.size > 0;
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     void process_request(RPCRequest<RpcSize>& req) {
 
         if (!req.unpack_request_headers()) {
@@ -77,7 +82,7 @@ public:
 
     }
 
-    template<size_t RpcSize = DEFAULT_RPC_BUFFER_SIZE>
+    template<size_t RpcSize = RPCLITE_REQUEST_BUFFER_SIZE>
     bool send_response(const RPCRequest<RpcSize>& req) const {
 
         if (req.type == NO_MSG || req.packer.size() == 0) {
@@ -92,9 +97,11 @@ public:
 
     uint32_t get_discarded_packets() const {return decoder->get_discarded_packets();}
 
+    IRpcDecoder* get_decoder() {return decoder;}
+
 private:
-    RpcDecoder<>* decoder = nullptr;
-    RpcFunctionDispatcher<MAX_CALLBACKS> dispatcher{};
+    IRpcDecoder* decoder = nullptr;
+    RpcFunctionDispatcher<RPCLITE_SERVER_MAX_CALLBACKS> dispatcher{};
     
 };
 
