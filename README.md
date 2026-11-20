@@ -44,6 +44,35 @@ void loop() {
 
 ```
 
+### Returning RPC errors
+If surfacing managed user errors to the client is needed, the return type of a bound callback can be wrapped in a `RpcResponseWrapper<T>` template object.
+
+```cpp
+#include <Arduino_RPClite.h>
+
+#define MY_ERR 0xAA
+
+SerialTransport transport(Serial1);
+RPCServer server(transport);
+
+RpcResponseWrapper<float> divide(float a, float b) {
+    RpcResponseWrapper<float> response;
+    if (b == 0){
+        return response.throw_err(MY_ERR, "Cannot divide by zero");
+    }
+    response.output = a / b;
+    return response;
+}
+
+void setup() {
+    Serial1.begin(115200);
+    server.bind("divide", divide);
+}
+
+void loop() {
+    server.run();
+}
+```
 
 ## Client
 

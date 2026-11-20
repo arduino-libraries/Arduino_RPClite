@@ -23,6 +23,34 @@ using namespace RpcUtils::detail;
 #include <stdexcept>
 #endif
 
+template<typename T>
+class RpcResponseWrapper
+{
+    public:
+    T output;
+    RpcError error{};
+
+    RpcResponseWrapper() = default;
+    RpcResponseWrapper(T val) : output(val) {}
+
+    RpcResponseWrapper& throw_err(const int code, const MsgPack::str_t trace) {
+        error.code = code;
+        error.traceback = trace;
+        return *this;
+    }
+
+    RpcResponseWrapper& trow_err(RpcError err) {
+        error.copy(err);
+        return *this;
+    }
+};
+
+template<typename T>
+struct is_rpc_wrapped : std::false_type {};
+
+template<typename T>
+struct is_rpc_wrapped<RpcResponseWrapper<T>> : std::true_type {};
+
 class IFunctionWrapper {
 public:
     virtual ~IFunctionWrapper() = default;
@@ -114,7 +142,20 @@ private:
     }
 
     template<typename Dummy = R>
-    typename std::enable_if<!std::is_void<Dummy>::value, int>::type
+    typename std::enable_if<is_rpc_wrapped<Dummy>::value, int>::type
+    handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
+        //unpacker not ready if deserialization fails at this point
+        std::tuple<Args...> args;
+        const int res = deserialize_tuple(unpacker, args);
+        if (res<0) return res;
+        MsgPack::object::nil_t nil;
+        R out = invoke_with_tuple(_func, args, arx::stdx::make_index_sequence<sizeof...(Args)>{});
+        out.error.code == NO_ERR ? packer.serialize(nil, out.output) : packer.serialize(out.error, nil);
+        return 0;
+    }
+
+    template<typename Dummy = R>
+    typename std::enable_if<!std::is_void<Dummy>::value && !is_rpc_wrapped<Dummy>::value, int>::type
     handle_call(MsgPack::Unpacker& unpacker, MsgPack::Packer& packer) {
         //unpacker not ready if deserialization fails at this point
         std::tuple<Args...> args;
