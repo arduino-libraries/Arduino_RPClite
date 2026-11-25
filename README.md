@@ -44,6 +44,35 @@ void loop() {
 
 ```
 
+### Returning RPC errors
+If surfacing managed user errors to the client is needed, the return type of a bound callback can be wrapped in a `RpcResponseWrapper<T>` template object.
+
+```cpp
+#include <Arduino_RPClite.h>
+
+#define MY_ERR 0xAA
+
+SerialTransport transport(Serial1);
+RPCServer server(transport);
+
+RpcResponseWrapper<float> divide(float a, float b) {
+    RpcResponseWrapper<float> response;
+    if (b == 0){
+        return response.throw_err(MY_ERR, "Cannot divide by zero");
+    }
+    response.output = a / b;
+    return response;
+}
+
+void setup() {
+    Serial1.begin(115200);
+    server.bind("divide", divide);
+}
+
+void loop() {
+    server.run();
+}
+```
 
 ## Client
 
@@ -85,6 +114,45 @@ void loop() {
 
 }
 
+```
+
+## RPC Buffer size
+The decoder buffer size can be set at compile time:
+```cpp
+#include <Arduino_RPClite.h>
+
+#define MY_DECODER_BUFFER_SIZE 4092
+
+SerialTransport transport(Serial1);
+RPCClient client(RpcDecoderManager::getInstance().getDecoder<MY_DECODER_BUFFER_SIZE>(transport));
+
+void setup() {
+    ...
+}
+
+void loop() {
+    ...
+}
+
+```
+
+The max bytesize allocated for each incoming RPC can be fine-tuned by the server.run templated method:
+
+```cpp
+#include <Arduino_RPClite.h>
+#define MY_DECODER_BUFFER_SIZE 2048
+#define MY_RPC_BUFFER_SIZE 256
+
+SerialTransport transport(Serial1);
+RPCServer server(RpcDecoderManager::getInstance().getDecoder<MY_DECODER_BUFFER_SIZE>(transport));
+
+void setup() {
+    ...
+}
+
+void loop(){
+    server.run<MY_RPC_BUFFER_SIZE>();
+}
 ```
 
 ### Credits

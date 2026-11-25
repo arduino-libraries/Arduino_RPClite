@@ -25,7 +25,8 @@ public:
     RpcDecoderManager(const RpcDecoderManager&) = delete;
     RpcDecoderManager& operator=(const RpcDecoderManager&) = delete;
 
-    RpcDecoder<>* getDecoder(ITransport& transport) {
+    template<size_t RpcSize = RPCLITE_DECODER_BUFFER_SIZE>
+    IRpcDecoder* getDecoder(ITransport& transport) {
         for (auto& entry : decoders_) {
             if (entry.transport == &transport) {
                 return entry.decoder;
@@ -33,7 +34,7 @@ public:
 
             if (entry.transport == nullptr) {
                 entry.transport = &transport;
-                entry.decoder = new RpcDecoder<>(transport);
+                entry.decoder = new RpcDecoder<RpcSize>(transport);
 
                 decoders_count++;
                 return entry.decoder;
@@ -56,11 +57,9 @@ private:
 
     RpcDecoderManager(){};
 
-    static RpcDecoderManager* instance;
-
     struct Entry {
         ITransport* transport = nullptr;
-        RpcDecoder<>* decoder = nullptr;
+        IRpcDecoder* decoder = nullptr;
     };
 
     std::array<Entry, RPCLITE_MAX_TRANSPORTS> decoders_;
