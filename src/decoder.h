@@ -19,6 +19,7 @@
 #include "rpclite_utils.h"
 #include "error.h"
 #include "request.h"
+#include "pending_tracker.h"
 
 using namespace RpcUtils::detail;
 
@@ -51,15 +52,19 @@ public:
         MsgPack::arr_size_t arg_size(sizeof...(args));
         packer.serialize(arg_size, std::forward<Args>(args)...);
 
-        if (send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size()){
-            if (call_type == CALL_MSG)
-            {
-                pending_id_list[pending_id_list_size++] = msg_id;
-                _msg_id++;
+        if (call_type == CALL_MSG) {
+            if (!_pending->add(msg_id)) return false;
+
+            if (send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) != packer.size()) {
+                _pending->remove(msg_id);
+                return false;
             }
+            _msg_id++;
             return true;
         }
-        return false;
+
+        // Notification
+        return send(reinterpret_cast<const uint8_t*>(packer.data()), packer.size()) == packer.size();
     }
 
 
@@ -304,30 +309,25 @@ public:
         _discarded_packets = 0;
         _dropped_bytes = 0;
         _msg_id = 0;
-        pending_id_list_size = 0;
+        _pending->clear();
     }
 
     bool remove_pending_id(uint32_t msg_id) {
-        for (size_t i = 0; i < pending_id_list_size; i++) {
-            if (pending_id_list[i] == msg_id) {
-                pending_id_list[i] = pending_id_list[--pending_id_list_size];
-                return true;
-            }
-        }
-        return false;
+        return _pending->remove(msg_id);
     }
 
     friend class RpcDecoderManager;
     friend class DecoderTester;
 
 protected:
-    IRpcDecoder(ITransport& transport, uint8_t* buffer, size_t capacity)
-        : _transport(&transport), _raw_buffer(buffer), _capacity(capacity) {}
+    IRpcDecoder(ITransport& transport, uint8_t* buffer, size_t capacity, IPendingTracker& pending)
+        : _transport(&transport), _raw_buffer(buffer), _capacity(capacity), _pending(&pending) {}
 
 private:
     ITransport* _transport;
     uint8_t* _raw_buffer;
     size_t _capacity;
+    IPendingTracker* _pending;
     size_t _bytes_stored = 0;
     int _packet_type = NO_MSG;
     size_t _packet_size = 0;
@@ -337,8 +337,6 @@ private:
     uint32_t _discarded_packets = 0;
     uint32_t _dropped_bytes = 0;
     bool auto_resync = true;
-    uint32_t pending_id_list[RPCLITE_MAX_PENDING_CALLS]{};
-    size_t pending_id_list_size = 0;
 
     int frameLength(const uint8_t* data, size_t size, size_t limit) {
         size_t pos = 0;
@@ -447,17 +445,8 @@ private:
         return size;
     }
 
-    void set_pending_id(uint32_t msg_id) {
-        if (pending_id_list_size < RPCLITE_MAX_PENDING_CALLS) {
-            pending_id_list[pending_id_list_size++] = msg_id;
-        }
-    }
-
-    bool is_pending_id(uint32_t msg_id) const {
-        for (size_t i = 0; i < pending_id_list_size; i++) {
-            if (pending_id_list[i] == msg_id) return true;
-        }
-        return false;
+    bool is_pending_id(uint32_t msg_id) {
+        return _pending->contains(msg_id);
     }
 };
 
@@ -467,10 +456,17 @@ public:
     static constexpr size_t buffer_size = BufferSize;
 
 private:
+
     explicit RpcDecoder(ITransport& transport)
-        : IRpcDecoder(transport, _storage, BufferSize) {}
+        : IRpcDecoder(transport, _storage, BufferSize, _default_tracker) {}
+
+    // Inject a platform-specific tracker (e.g. a mutex-guarded one on Zephyr).
+    // The tracker must outlive the decoder. The default tracker stays unused.
+    RpcDecoder(ITransport& transport, IPendingTracker& tracker)
+        : IRpcDecoder(transport, _storage, BufferSize, tracker) {}
 
     uint8_t _storage[BufferSize]{};
+    PendingTracker<> _default_tracker;
 
     friend class RpcDecoderManager;
     friend class DecoderTester;

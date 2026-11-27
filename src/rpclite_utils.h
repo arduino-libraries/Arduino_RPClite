@@ -25,9 +25,6 @@
 #define RPCLITE_MAX_TRANSPORTS  3
 #endif
 
-#ifndef RPCLITE_MAX_PENDING_CALLS
-#define RPCLITE_MAX_PENDING_CALLS  10
-#endif
 
 namespace RpcUtils {
 namespace detail {
